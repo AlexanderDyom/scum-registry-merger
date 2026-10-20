@@ -120,5 +120,8 @@
   "AiTip": "Strojni prijevod, još nije provjeren",
   "AiNote": "AI označava strojne prijevode koje još nitko nije provjerio.",
   "BannerOutrankedTitle": "Drugi pak prekriva zajednički registar",
-  "ReasonOutranked": "{0} ima vlastiti registar i učitava se nakon zajedničkog, pa igra koristi njegov registar. Ponovna izgradnja opet stavlja zajednički registar na vrh."
+  "ReasonOutranked": "{0} ima vlastiti registar i učitava se nakon zajedničkog, pa igra koristi njegov registar. Ponovna izgradnja opet stavlja zajednički registar na vrh.",
+  "StateUnreadable": "Ne može se pročitati",
+  "ReasonUnreadable": "Nije moguće pročitati registar: {0}. Njegovi novi predmeti neće biti u zajedničkom registru.",
+  "TipUnreadable": "Registar moda ne može se pročitati: {0}"
 }

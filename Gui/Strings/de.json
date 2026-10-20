@@ -120,5 +120,8 @@
   "AiTip": "Maschinelle Übersetzung, noch nicht geprüft",
   "AiNote": "AI kennzeichnet maschinelle Übersetzungen, die noch niemand geprüft hat.",
   "BannerOutrankedTitle": "Ein anderes Pak überdeckt die gemeinsame Registry",
-  "ReasonOutranked": "{0} bringt eine eigene Registry mit und wird nach der gemeinsamen geladen, daher nutzt das Spiel seine Registry. Neu bauen setzt die gemeinsame Registry wieder an die Spitze."
+  "ReasonOutranked": "{0} bringt eine eigene Registry mit und wird nach der gemeinsamen geladen, daher nutzt das Spiel seine Registry. Neu bauen setzt die gemeinsame Registry wieder an die Spitze.",
+  "StateUnreadable": "Nicht lesbar",
+  "ReasonUnreadable": "Die Registry von {0} konnte nicht gelesen werden. Seine neuen Gegenstände fehlen in der gemeinsamen Registry.",
+  "TipUnreadable": "Seine Registry ist nicht lesbar: {0}"
 }

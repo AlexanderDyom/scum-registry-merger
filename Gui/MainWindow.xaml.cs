@@ -272,6 +272,7 @@ public partial class MainWindow : Window
         if (s.GameUpdated) yield return Loc.T("ReasonGameUpdated");
         if (s.BuiltWithoutKey) yield return Loc.T("ReasonNoKeyBuild");
         if (s.Outranking.Count > 0) yield return Loc.F("ReasonOutranked", string.Join(", ", s.Outranking));
+        if (s.UnreadableCount > 0) yield return Loc.F("ReasonUnreadable", string.Join(", ", s.Mods.Where(m => m.State == ModState.Unreadable).Select(m => m.Name)));
     }
 
     private void RenderList()
@@ -283,17 +284,22 @@ public partial class MainWindow : Window
         var culture = Loc.Instance.Culture;
         ModList.ItemsSource = mods.Select(m => new ModRow
         {
-            Glyph = m.State == ModState.Missing ? "" : "",
-            StateBrush = B(m.State == ModState.Missing ? "Danger" : "Ok"),
+            Glyph = m.State switch { ModState.Missing => "", ModState.Unreadable => "", _ => "" },
+            StateBrush = B(m.State switch { ModState.Missing => "Danger", ModState.Unreadable => "Warn", _ => "Ok" }),
             RowBrush = m.State == ModState.Missing ? B("DangerBg") : Brushes.Transparent,
             Name = m.Name,
             FileName = m.FileName,
             Badge = m.State != ModState.Missing ? "" : m.IsUpdated ? Loc.T("BadgeUpdated") : m.IsNew ? Loc.T("BadgeNew") : "",
             Count = m.NewRecords > 0 ? (approx ? "≈ " : "") + m.NewRecords.ToString("N0", culture) : "—",
             CountBrush = B(m.NewRecords > 0 ? "Text" : "Muted"),
-            Status = Loc.T(m.State switch { ModState.Missing => "StateMissing", ModState.Included => "StateIncluded", _ => m.HasRegistry ? "StateNoNew" : "StateNoRegistry" }),
-            StatusBrush = B(m.State switch { ModState.Missing => "Danger", ModState.Included => "Ok", _ => "Text2" }),
-            Tip = m.Sample.Count > 0
+            Status = Loc.T(m.State switch
+            {
+                ModState.Missing => "StateMissing", ModState.Included => "StateIncluded", ModState.Unreadable => "StateUnreadable",
+                _ => m.HasRegistry ? "StateNoNew" : "StateNoRegistry",
+            }),
+            StatusBrush = B(m.State switch { ModState.Missing => "Danger", ModState.Included => "Ok", ModState.Unreadable => "Warn", _ => "Text2" }),
+            Tip = m.State == ModState.Unreadable ? Loc.F("TipUnreadable", m.Error ?? "")
+                : m.Sample.Count > 0
                 ? Loc.F("TipItems", string.Join(", ", m.Sample) + (m.NewRecords > m.Sample.Count ? ", …" : "")) + (approx ? "\n" + Loc.T("TipApprox") : "")
                 : m.HasRegistry ? null : Loc.T("TipNoRegistry"),
         }).ToList();

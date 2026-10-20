@@ -21,6 +21,8 @@ public enum ModState
     Included,
     /// <summary>Its new records are not (all) in the shared registry: rebuild needed.</summary>
     Missing,
+    /// <summary>Its registry can't be read (unsupported compression, damaged pak): left out of the shared registry.</summary>
+    Unreadable,
 }
 
 public sealed class ModInfo
@@ -38,6 +40,8 @@ public sealed class ModInfo
     /// <summary>A few of its new asset names, for display.</summary>
     public List<string> Sample { get; } = [];
     public string? RegistryHash { get; set; }
+    /// <summary>Why the registry can't be read (State = Unreadable).</summary>
+    public string? Error { get; set; }
 }
 
 public sealed class ScanResult
@@ -64,8 +68,9 @@ public sealed class ScanResult
     public List<string> Outranking { get; } = [];
 
     public int MissingCount => Mods.Count(m => m.State == ModState.Missing);
+    public int UnreadableCount => Mods.Count(m => m.State == ModState.Unreadable);
     public bool NeedsBuild => MissingCount > 0 || RemovedMods.Count > 0 || GameUpdated || BuiltWithoutKey || Outranking.Count > 0;
-    public bool AnyRegistryMods => Mods.Any(m => m.State != ModState.NotNeeded);
+    public bool AnyRegistryMods => Mods.Any(m => m.State is ModState.Included or ModState.Missing);
 }
 
 public sealed class BuildManifest
@@ -111,6 +116,8 @@ public sealed class BuildResult
     public string? SigCopiedFrom { get; set; }
     public bool BaseFromGame { get; set; }
     public List<(string Mod, int Added, int Replaced, int Skipped)> PerMod { get; } = [];
+    /// <summary>Mod paks whose registry couldn't be read, with the reason; they are not in the shared registry.</summary>
+    public List<(string Mod, string Error)> Unreadable { get; } = [];
     /// <summary>Older shared paks removed after the build.</summary>
     public List<string> Removed { get; } = [];
 }
@@ -198,7 +205,7 @@ public sealed class MergeEngine : IDisposable
         using var e = Open(paks, key);
         var stock = e.StockPak();
         if (stock == null) return false;
-        try { return AssetRegistry.Load(Registry(stock)!.Read()).Assets.Count > 0; }
+        try { return AssetRegistry.Load(PakEntryReader.Read(Registry(stock)!)).Assets.Count > 0; }
         catch (Exception) { return false; }
     }
 
@@ -280,14 +287,14 @@ public sealed class MergeEngine : IDisposable
         if (shared != null && Registry(shared) is { } sharedReg)
         {
             log?.Report("shared registry");
-            var reg = AssetRegistry.Load(sharedReg.Read());
+            var reg = AssetRegistry.Load(PakEntryReader.Read(sharedReg));
             sharedPaths = reg.Assets.Select(a => reg.NameText(a.ObjectPath)).ToHashSet(StringComparer.OrdinalIgnoreCase);
             result.SharedExists = true;
             result.SharedRecords = reg.Assets.Count;
             result.SharedBuiltAt = File.GetLastWriteTime(outputPak);
             if (FileOf(shared, ManifestPath) is { } mf)
             {
-                try { manifest = JsonSerializer.Deserialize<BuildManifest>(mf.Read()); }
+                try { manifest = JsonSerializer.Deserialize<BuildManifest>(PakEntryReader.Read(mf)); }
                 catch (JsonException) { manifest = null; }
                 if (manifest != null) result.SharedBuiltAt = manifest.BuiltAt.ToLocalTime();
             }
@@ -307,7 +314,7 @@ public sealed class MergeEngine : IDisposable
         if (stock != null)
         {
             log?.Report("game registry");
-            var bytes = Registry(stock)!.Read();
+            var bytes = PakEntryReader.Read(Registry(stock)!);
             var reg = AssetRegistry.Load(bytes);
             stockPaths = reg.Assets.Select(a => reg.NameText(a.ObjectPath)).ToHashSet(StringComparer.OrdinalIgnoreCase);
             result.GameRegistryReadable = true;
@@ -324,10 +331,22 @@ public sealed class MergeEngine : IDisposable
             result.Mods.Add(info);
             if (Registry(v) is not { } rf) continue;
             log?.Report(v.Name);
-            var bytes = rf.Read();
             info.HasRegistry = true;
+            byte[] bytes;
+            AssetRegistry reg;
+            try
+            {
+                bytes = PakEntryReader.Read(rf);
+                reg = AssetRegistry.Load(bytes);
+            }
+            catch (Exception ex)
+            {
+                // one bad pak must not stop the scan of the others
+                info.State = ModState.Unreadable;
+                info.Error = ex.Message;
+                continue;
+            }
             info.RegistryHash = Hash(bytes);
-            var reg = AssetRegistry.Load(bytes);
             var ships = ShipsIn(v);
             var shipped = new List<(string, string)>();
             foreach (var a in reg.Assets)
@@ -341,6 +360,7 @@ public sealed class MergeEngine : IDisposable
 
         foreach (var info in result.Mods)
         {
+            if (info.State == ModState.Unreadable) continue;
             if (!info.HasRegistry) { info.State = ModState.NotNeeded; continue; }
             var own = shippedByMod[info].Where(r => stockPaths != null ? !stockPaths.Contains(r.Path) : !carriedAsGame.ContainsKey(r.Path)).ToList();
             info.NewRecords = own.Count;
@@ -400,7 +420,19 @@ public sealed class MergeEngine : IDisposable
         {
             mods = ModPaks(outputPak).Where(v => Registry(v) != null).ToList();
         }
-        if (mods.Count == 0) throw new InvalidOperationException("No mod pak with an AssetRegistry.bin found.");
+        // read every mod registry up front; a pak that can't be read is left out (and reported), the others still merge
+        var registries = new Dictionary<IVfsReader, byte[]>();
+        foreach (var v in mods)
+        {
+            try { registries[v] = PakEntryReader.Read(Registry(v)!); AssetRegistry.Load(registries[v]); }
+            catch (Exception ex)
+            {
+                registries.Remove(v);
+                result.Unreadable.Add((v.Name, ex.Message));
+            }
+        }
+        mods = mods.Where(registries.ContainsKey).ToList();
+        if (mods.Count == 0) throw new InvalidOperationException("No mod pak with a readable AssetRegistry.bin found.");
 
         var manifest = new BuildManifest { BuiltAt = DateTime.UtcNow };
         AssetRegistry merged;
@@ -409,7 +441,7 @@ public sealed class MergeEngine : IDisposable
         if (stock != null)
         {
             log?.Report($"base: game registry ({stock.Name})");
-            var bytes = Registry(stock)!.Read();
+            var bytes = PakEntryReader.Read(Registry(stock)!);
             merged = AssetRegistry.Load(bytes);
             manifest.BaseHash = Hash(bytes);
             result.BaseFromGame = true;
@@ -417,7 +449,7 @@ public sealed class MergeEngine : IDisposable
         else
         {
             log?.Report($"base: {mods[0].Name} (no AES key: the game's records come from this mod's copy)");
-            var bytes = Registry(mods[0])!.Read();
+            var bytes = registries[mods[0]];
             merged = AssetRegistry.Load(bytes);
             manifest.Base = "mod:" + mods[0].Name;
             manifest.BaseHash = Hash(bytes);
@@ -430,7 +462,7 @@ public sealed class MergeEngine : IDisposable
         foreach (var v in mods.Skip(first))
         {
             log?.Report(v.Name);
-            var bytes = Registry(v)!.Read();
+            var bytes = registries[v];
             var reg = AssetRegistry.Load(bytes);
             var (added, replaced, skipped) = merger.Add(reg, options.ShipFilter ? ShipsIn(v) : null, owned);
             result.PerMod.Add((v.Name, added, replaced, skipped));

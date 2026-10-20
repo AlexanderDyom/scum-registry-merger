@@ -88,6 +88,8 @@ of its own still loads after the shared one, the app says so, and a rebuild fixe
 - `Core/Merger.cs` keeps the game's records as they are. A mod record whose object path is new is added with all its
   tags, bundles, chunk ids and flags. Only records whose package actually ships in that mod's pak are taken, so stale
   game records from older game versions don't come back.
+- `Core/PakEntryReader.cs` reads pak entries. Zlib-compressed ones are inflated with .NET's own ZLibStream, so no native
+  zlib library is needed.
 - `Core/PakWriter.cs` writes an uncompressed pak v11 with the path hash index and the full directory index (the same
   bytes as `repak pack --version V11`).
 - `Core/PakPriority.cs` implements the pak priority rules above.

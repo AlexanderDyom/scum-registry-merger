@@ -6,7 +6,7 @@ try
 {
     return Cli.Run(args);
 }
-catch (Exception ex) when (ex is FormatException or IOException or InvalidOperationException or UnauthorizedAccessException)
+catch (Exception ex)
 {
     Console.Error.WriteLine("error: " + ex.Message);
     return 1;
@@ -131,7 +131,9 @@ static class Cli
         var scan = engine.Scan(options.OutputPak);
         Console.WriteLine($"game registry: {(scan.GameRegistryReadable ? "readable" : $"not readable ({scan.EncryptedPaks} encrypted paks{(string.IsNullOrWhiteSpace(aes) ? ", no AES key given" : "")})")}");
         foreach (var m in scan.Mods)
-            Console.WriteLine($"  {m.FileName}: {(m.HasRegistry ? $"{m.NewRecords} new records" : "no registry")}, {m.State}{(m.IsNew ? ", new" : "")}{(m.IsUpdated ? ", updated" : "")}");
+            Console.WriteLine(m.State == ModState.Unreadable
+                ? $"  {m.FileName}: registry can't be read ({m.Error}), left out"
+                : $"  {m.FileName}: {(m.HasRegistry ? $"{m.NewRecords} new records" : "no registry")}, {m.State}{(m.IsNew ? ", new" : "")}{(m.IsUpdated ? ", updated" : "")}");
         foreach (var r in scan.RemovedMods) Console.WriteLine($"  removed since last build: {r}");
         if (scan.GameUpdated) Console.WriteLine("  the game's registry changed since the last build");
         foreach (var o in scan.Outranking) Console.WriteLine($"  {o} ships its own registry and loads after {scan.SharedPak}: the game uses its registry");
@@ -142,6 +144,7 @@ static class Cli
                               (skipped > 0 ? $", {skipped} ignored (their package is not in this pak)" : ""));
         Console.WriteLine($"merged: {result.Records} records (base: {(result.BaseFromGame ? "game registry" : "a mod's copy of the game registry")})");
         if (options.RegistryOut != null) Console.WriteLine($"wrote {options.RegistryOut}");
+        foreach (var (mod, error) in result.Unreadable) Console.WriteLine($"  {mod}: left out, registry can't be read ({error})");
         foreach (var r in result.Removed) Console.WriteLine($"removed older shared pak {r}");
         if (!options.DryRun)
             Console.WriteLine($"wrote {result.OutputPak}" + (result.SigCopiedFrom != null ? $" (+ .sig, copy of {result.SigCopiedFrom})" : " (no .sig found to copy)"));

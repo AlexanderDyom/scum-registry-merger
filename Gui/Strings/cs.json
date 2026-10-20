@@ -120,5 +120,8 @@
   "AiTip": "Strojový překlad, zatím nezkontrolovaný",
   "AiNote": "AI označuje strojové překlady, které zatím nikdo nezkontroloval.",
   "BannerOutrankedTitle": "Jiný pak překrývá společný registr",
-  "ReasonOutranked": "{0} má vlastní registr a načítá se po společném, takže hra používá jeho registr. Nové sestavení dá společný registr znovu navrch."
+  "ReasonOutranked": "{0} má vlastní registr a načítá se po společném, takže hra používá jeho registr. Nové sestavení dá společný registr znovu navrch.",
+  "StateUnreadable": "Nelze přečíst",
+  "ReasonUnreadable": "Registr se nepodařilo přečíst: {0}. Jeho nové předměty nebudou ve společném registru.",
+  "TipUnreadable": "Registr modu nelze přečíst: {0}"
 }

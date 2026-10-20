@@ -120,5 +120,8 @@
   "AiTip": "Machine translation, not reviewed yet",
   "AiNote": "AI marks machine translations that nobody has reviewed yet.",
   "BannerOutrankedTitle": "Another pak overrides the shared registry",
-  "ReasonOutranked": "{0} ships its own registry and loads after the shared one, so the game uses its registry. Rebuilding puts the shared registry on top again."
+  "ReasonOutranked": "{0} ships its own registry and loads after the shared one, so the game uses its registry. Rebuilding puts the shared registry on top again.",
+  "StateUnreadable": "Can't be read",
+  "ReasonUnreadable": "Couldn't read the registry of: {0}. Its new items won't be in the shared registry.",
+  "TipUnreadable": "Its registry can't be read: {0}"
 }

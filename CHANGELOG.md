@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.1
+
+- Zlib-compressed mod paks (packed with UnrealPak or the SCUM editor) can be read now. Before, such a mod stopped the
+  whole check with "Zlib decompression failed: not initialized".
+- A mod whose registry can't be read no longer stops the check: it is marked "Can't be read", left out of the shared
+  registry, and the other mods are merged as usual.
+
 ## 1.1.0
 
 - The shared pak now always outranks the mods. SCUM compares pak names as text, so a mod named

@@ -120,5 +120,8 @@
   "AiTip": "Tłumaczenie maszynowe, jeszcze niesprawdzone",
   "AiNote": "AI oznacza tłumaczenia maszynowe, których nikt jeszcze nie sprawdził.",
   "BannerOutrankedTitle": "Inny pak przesłania wspólny rejestr",
-  "ReasonOutranked": "{0} ma własny rejestr i ładuje się po wspólnym, więc gra używa jego rejestru. Przebudowanie znów postawi wspólny rejestr na szczycie."
+  "ReasonOutranked": "{0} ma własny rejestr i ładuje się po wspólnym, więc gra używa jego rejestru. Przebudowanie znów postawi wspólny rejestr na szczycie.",
+  "StateUnreadable": "Nie do odczytu",
+  "ReasonUnreadable": "Nie udało się odczytać rejestru: {0}. Jego nowych przedmiotów nie będzie we wspólnym rejestrze.",
+  "TipUnreadable": "Nie można odczytać rejestru moda: {0}"
 }
