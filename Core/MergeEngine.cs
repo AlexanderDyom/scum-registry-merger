@@ -58,8 +58,13 @@ public sealed class ScanResult
     /// <summary>Last build used a mod's copy of the game records; the game's own registry is readable now.</summary>
     public bool BuiltWithoutKey { get; set; }
 
+    /// <summary>File name of the current shared registry pak, or null.</summary>
+    public string? SharedPak { get; set; }
+    /// <summary>Paks with a registry of their own that load after the shared one: the game uses theirs.</summary>
+    public List<string> Outranking { get; } = [];
+
     public int MissingCount => Mods.Count(m => m.State == ModState.Missing);
-    public bool NeedsBuild => MissingCount > 0 || RemovedMods.Count > 0 || GameUpdated || BuiltWithoutKey;
+    public bool NeedsBuild => MissingCount > 0 || RemovedMods.Count > 0 || GameUpdated || BuiltWithoutKey || Outranking.Count > 0;
     public bool AnyRegistryMods => Mods.Any(m => m.State != ModState.NotNeeded);
 }
 
@@ -84,7 +89,10 @@ public sealed class ManifestMod
 
 public sealed class BuildOptions
 {
-    /// <summary>Output pak (default: &lt;Paks&gt;/~mods/pakchunk999-ModsRegistry_P.pak).</summary>
+    /// <summary>
+    /// Output pak. Default: &lt;Paks&gt;/~mods/pakchunk999-ModsRegistry_N_P.pak with a patch number N above every other pak's,
+    /// and the older shared paks are removed after the build.
+    /// </summary>
     public string? OutputPak { get; set; }
     /// <summary>Only these mod paks (full paths), in this order; null = every mod pak with a registry, in load order.</summary>
     public List<string>? Mods { get; set; }
@@ -103,13 +111,18 @@ public sealed class BuildResult
     public string? SigCopiedFrom { get; set; }
     public bool BaseFromGame { get; set; }
     public List<(string Mod, int Added, int Replaced, int Skipped)> PerMod { get; } = [];
+    /// <summary>Older shared paks removed after the build.</summary>
+    public List<string> Removed { get; } = [];
 }
 
 public sealed class MergeEngine : IDisposable
 {
     public const string RegistryPath = "SCUM/AssetRegistry.bin";
     public const string ManifestPath = "SCUM/ModsRegistry.json";
-    public const string OutputName = "pakchunk999-ModsRegistry_P.pak";
+    public const string SharedMarker = "ModsRegistry";
+
+    /// <summary>pakchunk999-ModsRegistry_N_P.pak: the patch number N lifts its priority above every mod (see PakPriority).</summary>
+    public static string OutputName(int patchNumber) => $"pakchunk999-{SharedMarker}_{patchNumber}_P.pak";
 
     private static readonly JsonSerializerOptions Json = new() { WriteIndented = true };
 
@@ -119,7 +132,27 @@ public sealed class MergeEngine : IDisposable
 
     public string Paks { get; }
     public int EncryptedPaks { get; }
-    public string DefaultOutputPak => Path.Combine(Paks, "~mods", OutputName);
+
+    /// <summary>
+    /// Where the next shared pak goes: patch number 999, or one above the highest patch number any other pak under Paks
+    /// uses, so it outranks every mod whatever its name.
+    /// </summary>
+    public string NextOutputPak()
+    {
+        var shared = SharedFiles(Paks).Select(Path.GetFullPath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var max = Directory.EnumerateFiles(Paks, "*.pak", SearchOption.AllDirectories)
+            .Where(f => !shared.Contains(Path.GetFullPath(f)))
+            .Select(f => PakPriority.PatchNumber(PakPriority.MountPath(Paks, f)))
+            .DefaultIfEmpty(0).Max();
+        return Path.Combine(Paks, "~mods", OutputName(Math.Max(999, max + 1)));
+    }
+
+    /// <summary>Shared registry paks (ours, any patch number, also the older pakchunk999-ModsRegistry_P.pak) in ~mods.</summary>
+    public static IEnumerable<string> SharedFiles(string paks)
+    {
+        var mods = Path.Combine(paks, "~mods");
+        return Directory.Exists(mods) ? Directory.EnumerateFiles(mods, $"pakchunk*-{SharedMarker}*_P.pak") : [];
+    }
 
     private MergeEngine(string paks, DefaultFileProvider provider)
     {
@@ -182,28 +215,28 @@ public sealed class MergeEngine : IDisposable
     private static bool IsRegistryOnly(IVfsReader v) =>
         v.Files.Count > 0 && v.Files.Keys.All(k => k.Equals(RegistryPath, StringComparison.OrdinalIgnoreCase) || k.Equals(ManifestPath, StringComparison.OrdinalIgnoreCase));
 
-    private IVfsReader? StockPak() => _all.Where(v => !IsModPak(v) && Registry(v) != null).OrderBy(v => ChunkOrder(v.Name)).LastOrDefault();
+    private IComparer<IVfsReader> Priority => Comparer<IVfsReader>.Create((a, b) => PakPriority.Compare(Paks, a.Path, b.Path));
+
+    private IVfsReader? StockPak() => _all.Where(v => !IsModPak(v) && Registry(v) != null).OrderBy(v => v, Priority).LastOrDefault();
+
+    private static bool IsShared(IVfsReader v) => IsRegistryOnly(v) && v.Name.Contains(SharedMarker, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Shared registry paks, the one the game uses first.</summary>
+    private List<IVfsReader> SharedPaks() => _all.Where(IsShared).OrderByDescending(v => v, Priority).ToList();
 
     private IVfsReader? PakAt(string path) =>
         _all.FirstOrDefault(v => string.Equals(Path.GetFullPath(v.Path), Path.GetFullPath(path), StringComparison.OrdinalIgnoreCase));
 
     private List<IVfsReader> ModPaks(string outputPak) => _all
         .Where(v => IsModPak(v) && !IsRegistryOnly(v) && !string.Equals(Path.GetFullPath(v.Path), Path.GetFullPath(outputPak), StringComparison.OrdinalIgnoreCase))
-        .OrderBy(v => ChunkOrder(v.Name)).ToList();
-
-    /// <summary>Load order key: pakchunk number, then name.</summary>
-    public static (int, string) ChunkOrder(string name)
-    {
-        var m = Regex.Match(name, @"pakchunk(\d+)", RegexOptions.IgnoreCase);
-        return (m.Success && int.TryParse(m.Groups[1].Value, out var n) ? n : -1, name.ToLowerInvariant());
-    }
+        .OrderBy(v => v, Priority).ToList();
 
     /// <summary>Display name: pakchunk901-FoodMod_P.pak -> FoodMod.</summary>
     public static string DisplayName(string pakName)
     {
         var n = Path.GetFileNameWithoutExtension(pakName);
         n = Regex.Replace(n, @"^pakchunk\d+(_s\d+)?-", "", RegexOptions.IgnoreCase);
-        n = Regex.Replace(n, @"_P$", "", RegexOptions.IgnoreCase);
+        n = Regex.Replace(n, @"(_\d+)?_P$", "", RegexOptions.IgnoreCase);
         return n.Length > 0 ? n : pakName;
     }
 
@@ -237,13 +270,13 @@ public sealed class MergeEngine : IDisposable
     public ScanResult Scan(string? outputPak = null, IProgress<string>? log = null)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        outputPak = Path.GetFullPath(outputPak ?? DefaultOutputPak);
-        var result = new ScanResult { Paks = Paks, OutputPak = outputPak, EncryptedPaks = EncryptedPaks };
+        // the shared registry pak (from an earlier build): the given one, else the highest-priority one in ~mods
+        var shared = outputPak != null ? PakAt(outputPak) : SharedPaks().FirstOrDefault();
+        outputPak = Path.GetFullPath(shared?.Path ?? outputPak ?? NextOutputPak());
+        var result = new ScanResult { Paks = Paks, OutputPak = outputPak, EncryptedPaks = EncryptedPaks, SharedPak = shared?.Name };
 
-        // the shared registry pak (from an earlier build)
         BuildManifest? manifest = null;
         HashSet<string>? sharedPaths = null;
-        var shared = PakAt(outputPak);
         if (shared != null && Registry(shared) is { } sharedReg)
         {
             log?.Report("shared registry");
@@ -258,6 +291,14 @@ public sealed class MergeEngine : IDisposable
                 catch (JsonException) { manifest = null; }
                 if (manifest != null) result.SharedBuiltAt = manifest.BuiltAt.ToLocalTime();
             }
+        }
+
+        // paks with a registry of their own that the game reads before the shared one
+        if (shared != null)
+        {
+            var sharedSet = SharedPaks().ToHashSet();
+            foreach (var v in _all.Where(v => !sharedSet.Contains(v) && Registry(v) != null && Priority.Compare(v, shared) > 0).OrderByDescending(v => v, Priority))
+                result.Outranking.Add(v.Name);
         }
 
         // the game's registry
@@ -341,7 +382,7 @@ public sealed class MergeEngine : IDisposable
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         options ??= new BuildOptions();
-        var outputPak = Path.GetFullPath(options.OutputPak ?? DefaultOutputPak);
+        var outputPak = Path.GetFullPath(options.OutputPak ?? NextOutputPak());
         var result = new BuildResult { OutputPak = outputPak };
 
         List<IVfsReader> mods;
@@ -418,6 +459,17 @@ public sealed class MergeEngine : IDisposable
         var tmp = outputPak + ".tmp";
         PakWriter.Write(tmp, [(RegistryPath, outBytes), (ManifestPath, JsonSerializer.SerializeToUtf8Bytes(manifest, Json))]);
         File.Move(tmp, outputPak, true);
+        if (options.OutputPak == null)
+        {
+            // older shared paks (other patch numbers, or the old pakchunk999-ModsRegistry_P.pak) would compete with the new one
+            foreach (var old in SharedFiles(Paks).Where(f => !string.Equals(Path.GetFullPath(f), outputPak, StringComparison.OrdinalIgnoreCase)).ToList())
+            {
+                File.Delete(old);
+                var oldSig = Path.ChangeExtension(old, ".sig");
+                if (File.Exists(oldSig)) File.Delete(oldSig);
+                result.Removed.Add(Path.GetFileName(old));
+            }
+        }
         // any game .sig works (mods load with signature checks off); take the smallest
         var sig = Directory.EnumerateFiles(Paks, "*.sig").Where(f => !Path.GetFileName(f).Contains("_P.", StringComparison.OrdinalIgnoreCase))
             .OrderBy(f => new FileInfo(f).Length).ThenBy(f => f, StringComparer.OrdinalIgnoreCase).FirstOrDefault();
@@ -429,12 +481,15 @@ public sealed class MergeEngine : IDisposable
         return result;
     }
 
-    /// <summary>Removes the shared registry pak and its .sig (the mods stay).</summary>
-    public static void DeleteShared(string outputPak)
+    /// <summary>Removes every shared registry pak in ~mods and its .sig (the mods stay).</summary>
+    public static void DeleteShared(string paks)
     {
-        if (File.Exists(outputPak)) File.Delete(outputPak);
-        var sig = Path.ChangeExtension(outputPak, ".sig");
-        if (File.Exists(sig)) File.Delete(sig);
+        foreach (var pak in SharedFiles(paks).ToList())
+        {
+            File.Delete(pak);
+            var sig = Path.ChangeExtension(pak, ".sig");
+            if (File.Exists(sig)) File.Delete(sig);
+        }
     }
 
     public void Dispose()

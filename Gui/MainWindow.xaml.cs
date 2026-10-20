@@ -32,6 +32,9 @@ public partial class MainWindow : Window
     private bool _firstScan = true;
     private Updater.Release? _update;
 
+    /// <summary>The shared pak's name without its patch number (that changes with the mods installed).</summary>
+    private const string SharedLabel = "pakchunk999-ModsRegistry";
+
     private AppSettings S => App.Settings;
     private string Paks => GameLocator.ResolvePaks(S.GameFolder) ?? S.GameFolder ?? "";
 
@@ -95,12 +98,12 @@ public partial class MainWindow : Window
         if (changed.Count == 1 && changed[0].IsNew && scan.RemovedMods.Count == 0 && !scan.GameUpdated)
         {
             title = Loc.T("NewModTitle");
-            text = Loc.F("NewModText", changed[0].Name, Loc.P("ItemsCount", changed[0].NewRecords), MergeEngine.OutputName);
+            text = Loc.F("NewModText", changed[0].Name, Loc.P("ItemsCount", changed[0].NewRecords), SharedLabel);
         }
         else
         {
             title = Loc.T("ChangedTitle");
-            text = string.Join("\n", Reasons(scan).Prepend(Loc.F("ChangedText", MergeEngine.OutputName)));
+            text = string.Join("\n", Reasons(scan).Prepend(Loc.F("ChangedText", SharedLabel)));
         }
         if (Dialog.Show(this, title, text, Loc.T("BuildRegistry"), Loc.T("Later"), Loc.T(S.Kind == InstallKind.Server ? "CloseServerFirst" : "CloseGameFirst"), ""))
             await BuildAsync();
@@ -206,8 +209,8 @@ public partial class MainWindow : Window
 
         // footer
         FooterText.Text = _scan is { SharedExists: true }
-            ? Loc.F("FooterShared", MergeEngine.OutputName, _scan.SharedBuiltAt?.ToString("g", Loc.Instance.Culture) ?? "?", _scan.SharedRecords.ToString("N0", Loc.Instance.Culture))
-            : Loc.F("FooterNoShared", MergeEngine.OutputName);
+            ? Loc.F("FooterShared", _scan.SharedPak ?? SharedLabel, _scan.SharedBuiltAt?.ToString("g", Loc.Instance.Culture) ?? "?", _scan.SharedRecords.ToString("N0", Loc.Instance.Culture))
+            : Loc.F("FooterNoShared", SharedLabel);
         VersionText.Text = "v" + Updater.CurrentText;
         UpdateLink.Visibility = _update != null ? Visibility.Visible : Visibility.Collapsed;
         if (_update != null) UpdateLink.Content = Loc.F("UpdateAvailable", _update.Version.ToString(3));
@@ -251,6 +254,7 @@ public partial class MainWindow : Window
             var title = s.MissingCount > 0 ? Loc.P("BannerMissing", s.MissingCount)
                 : s.RemovedMods.Count > 0 ? Loc.T("BannerRemovedTitle")
                 : s.GameUpdated ? Loc.T("BannerGameUpdatedTitle")
+                : s.Outranking.Count > 0 ? Loc.T("BannerOutrankedTitle")
                 : Loc.T("BannerNoKeyBuildTitle");
             SetBanner("DangerBg", "Danger", "", title, string.Join("\n", Reasons(s)), Loc.T("BuildRegistry"));
         }
@@ -267,6 +271,7 @@ public partial class MainWindow : Window
         if (s.RemovedMods.Count > 0) yield return Loc.F("ReasonRemoved", string.Join(", ", s.RemovedMods));
         if (s.GameUpdated) yield return Loc.T("ReasonGameUpdated");
         if (s.BuiltWithoutKey) yield return Loc.T("ReasonNoKeyBuild");
+        if (s.Outranking.Count > 0) yield return Loc.F("ReasonOutranked", string.Join(", ", s.Outranking));
     }
 
     private void RenderList()

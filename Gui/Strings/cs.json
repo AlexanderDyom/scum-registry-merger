@@ -118,5 +118,7 @@
   "DeleteConfirmTitle": "Smazat společný registr?",
   "DeleteConfirmText": "{0} bude odebrán z ~mods. Mody, které přidávají předměty, si pak budou znovu navzájem skrývat předměty, dokud ho znovu nesestavíte.",
   "AiTip": "Strojový překlad, zatím nezkontrolovaný",
-  "AiNote": "AI označuje strojové překlady, které zatím nikdo nezkontroloval."
+  "AiNote": "AI označuje strojové překlady, které zatím nikdo nezkontroloval.",
+  "BannerOutrankedTitle": "Jiný pak překrývá společný registr",
+  "ReasonOutranked": "{0} má vlastní registr a načítá se po společném, takže hra používá jeho registr. Nové sestavení dá společný registr znovu navrch."
 }

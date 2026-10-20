@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.0
+
+- The shared pak now always outranks the mods. SCUM compares pak names as text, so a mod named
+  `pakchunk9999999-X_P.pak` used to win over `pakchunk999-ModsRegistry_P.pak` and hide the merged registry. The shared
+  pak is now `pakchunk999-ModsRegistry_999_P.pak` (patch number 999, or one above any other pak's), which outranks any
+  name. Verified in game.
+- Older shared paks are removed after a build.
+- New warning: a pak with a registry of its own that still loads after the shared one.
+
 ## 1.0.0
 
 First release.

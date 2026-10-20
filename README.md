@@ -16,8 +16,8 @@ spawned or crafted, and traders don't sell them.
 ## The fix
 
 SCUM Registry Merger reads the registry of every installed mod and merges it with the game's registry. It writes the
-result as one extra pak, `~mods/pakchunk999-ModsRegistry_P.pak` (plus a `.sig`). That pak loads after the mods, so the
-game uses its registry, and it has every mod's records.
+result as one extra pak, `~mods/pakchunk999-ModsRegistry_999_P.pak` (plus a `.sig`). That pak takes priority over
+every mod (see [Which pak wins](#which-pak-wins)), so the game uses its registry, and it has every mod's records.
 
 Your mods stay untouched. To undo, delete that one pak, or press *Delete registry* in the settings.
 
@@ -66,6 +66,19 @@ the app. Corrections are welcome: one JSON file per language in [`Gui/Strings`](
   installed.
 - This is a fan-made tool, not affiliated with Gamepires or Jagex.
 
+## Which pak wins
+
+SCUM (Unreal Engine 4.27) decides which pak a file comes from by two rules:
+
+1. **Pak order.** A `*_P.pak` gets `100 × patch version`, where the patch version is `N+1` for a name ending in
+   `_N_P.pak` and 1 otherwise.
+2. **Path.** At equal order, the pak whose path sorts last as text wins. Names compare as strings, not numbers:
+   `pakchunk9999999-X_P.pak` beats `pakchunk999-Y_P.pak`, and `pakchunk999-Y_P.pak` beats `pakchunk1000-Z_P.pak`.
+
+So the shared pak carries a patch number: `_999_P`, or one above the highest patch number any other pak uses. That
+puts it above every mod, whatever the names. Older shared paks are removed after a build. If some pak with a registry
+of its own still loads after the shared one, the app says so, and a rebuild fixes it.
+
 ## How it works (for modders)
 
 - `Core/AssetRegistry.cs` reads and writes the cooked UE 4.27 AssetRegistry (FAssetRegistryVersion 8, FixedTags)
@@ -75,6 +88,7 @@ the app. Corrections are welcome: one JSON file per language in [`Gui/Strings`](
   game records from older game versions don't come back.
 - `Core/PakWriter.cs` writes an uncompressed pak v11 with the path hash index and the full directory index (the same
   bytes as `repak pack --version V11`).
+- `Core/PakPriority.cs` implements the pak priority rules above.
 - `Core/MergeEngine.cs` scans and builds. The shared pak also carries `SCUM/ModsRegistry.json` with the SHA-1 of every
   merged mod registry, which is how added, updated and removed mods are detected.
 - `Gui/` is the WPF window. `Cli/` is the console version, which also has `verify`, `list` and `pack` commands for

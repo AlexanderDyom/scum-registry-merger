@@ -118,5 +118,7 @@
   "DeleteConfirmTitle": "Delete the shared registry?",
   "DeleteConfirmText": "{0} will be removed from ~mods. Mods that add items will then hide each other's items until you build it again.",
   "AiTip": "Machine translation, not reviewed yet",
-  "AiNote": "AI marks machine translations that nobody has reviewed yet."
+  "AiNote": "AI marks machine translations that nobody has reviewed yet.",
+  "BannerOutrankedTitle": "Another pak overrides the shared registry",
+  "ReasonOutranked": "{0} ships its own registry and loads after the shared one, so the game uses its registry. Rebuilding puts the shared registry on top again."
 }

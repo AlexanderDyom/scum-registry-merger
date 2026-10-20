@@ -118,5 +118,7 @@
   "DeleteConfirmTitle": "Izbrisati zajednički registar?",
   "DeleteConfirmText": "{0} bit će uklonjen iz ~mods. Modovi koji dodaju predmete tada će opet skrivati predmete jedni drugima dok ga ponovno ne izgradiš.",
   "AiTip": "Strojni prijevod, još nije provjeren",
-  "AiNote": "AI označava strojne prijevode koje još nitko nije provjerio."
+  "AiNote": "AI označava strojne prijevode koje još nitko nije provjerio.",
+  "BannerOutrankedTitle": "Drugi pak prekriva zajednički registar",
+  "ReasonOutranked": "{0} ima vlastiti registar i učitava se nakon zajedničkog, pa igra koristi njegov registar. Ponovna izgradnja opet stavlja zajednički registar na vrh."
 }

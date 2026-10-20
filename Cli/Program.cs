@@ -134,6 +134,7 @@ static class Cli
             Console.WriteLine($"  {m.FileName}: {(m.HasRegistry ? $"{m.NewRecords} new records" : "no registry")}, {m.State}{(m.IsNew ? ", new" : "")}{(m.IsUpdated ? ", updated" : "")}");
         foreach (var r in scan.RemovedMods) Console.WriteLine($"  removed since last build: {r}");
         if (scan.GameUpdated) Console.WriteLine("  the game's registry changed since the last build");
+        foreach (var o in scan.Outranking) Console.WriteLine($"  {o} ships its own registry and loads after {scan.SharedPak}: the game uses its registry");
 
         var result = engine.Build(options);
         foreach (var (mod, added, replaced, skipped) in result.PerMod)
@@ -141,6 +142,7 @@ static class Cli
                               (skipped > 0 ? $", {skipped} ignored (their package is not in this pak)" : ""));
         Console.WriteLine($"merged: {result.Records} records (base: {(result.BaseFromGame ? "game registry" : "a mod's copy of the game registry")})");
         if (options.RegistryOut != null) Console.WriteLine($"wrote {options.RegistryOut}");
+        foreach (var r in result.Removed) Console.WriteLine($"removed older shared pak {r}");
         if (!options.DryRun)
             Console.WriteLine($"wrote {result.OutputPak}" + (result.SigCopiedFrom != null ? $" (+ .sig, copy of {result.SigCopiedFrom})" : " (no .sig found to copy)"));
         return 0;

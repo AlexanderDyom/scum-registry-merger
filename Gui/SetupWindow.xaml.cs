@@ -100,7 +100,7 @@ internal static class PathCheck
         {
             var mods = Path.Combine(paks, "~mods");
             var n = Directory.Exists(mods)
-                ? Directory.EnumerateFiles(mods, "*.pak").Count(f => !Path.GetFileName(f).Equals(MergeEngine.OutputName, StringComparison.OrdinalIgnoreCase))
+                ? Directory.EnumerateFiles(mods, "*.pak").Except(MergeEngine.SharedFiles(paks)).Count()
                 : 0;
             target.Text = "✓ " + Loc.F("PaksFound", n);
             target.Foreground = (System.Windows.Media.Brush)target.FindResource("Ok");

@@ -100,8 +100,7 @@ public partial class SettingsWindow : Window
         AutoCheck.Visibility = Updater.Configured ? Visibility.Visible : Visibility.Collapsed;
 
         var paks = GameLocator.ResolvePaks(PathBox.Text);
-        var shared = paks != null ? Path.Combine(paks, "~mods", MergeEngine.OutputName) : null;
-        var exists = shared != null && File.Exists(shared);
+        var exists = paks != null && MergeEngine.SharedFiles(paks).Any();
         DeleteText.Text = exists ? Loc.T("DeleteRegistryText") : Loc.T("NoRegistryToDelete");
         DeleteButton.IsEnabled = exists;
     }
@@ -192,14 +191,14 @@ public partial class SettingsWindow : Window
     {
         var paks = GameLocator.ResolvePaks(PathBox.Text);
         if (paks == null) return;
-        if (!Dialog.Show(this, Loc.T("DeleteConfirmTitle"), Loc.F("DeleteConfirmText", MergeEngine.OutputName), Loc.T("DeleteRegistry"), Loc.T("Cancel"), icon: ""))
+        if (!Dialog.Show(this, Loc.T("DeleteConfirmTitle"), Loc.F("DeleteConfirmText", "pakchunk999-ModsRegistry"), Loc.T("DeleteRegistry"), Loc.T("Cancel"), icon: ""))
             return;
         if (GameLocator.IsGameRunning())
         {
             Dialog.Show(this, Loc.T("GameRunningTitle"), Loc.T("GameRunningText"), Loc.T("Close"), icon: "");
             return;
         }
-        MergeEngine.DeleteShared(Path.Combine(paks, "~mods", MergeEngine.OutputName));
+        MergeEngine.DeleteShared(paks);
         RegistryDeleted = true;
         Render();
     }

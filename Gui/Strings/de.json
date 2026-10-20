@@ -118,5 +118,7 @@
   "DeleteConfirmTitle": "Gemeinsame Registry löschen?",
   "DeleteConfirmText": "{0} wird aus ~mods entfernt. Mods, die Gegenstände hinzufügen, verdecken dann wieder gegenseitig ihre Gegenstände, bis du sie neu baust.",
   "AiTip": "Maschinelle Übersetzung, noch nicht geprüft",
-  "AiNote": "AI kennzeichnet maschinelle Übersetzungen, die noch niemand geprüft hat."
+  "AiNote": "AI kennzeichnet maschinelle Übersetzungen, die noch niemand geprüft hat.",
+  "BannerOutrankedTitle": "Ein anderes Pak überdeckt die gemeinsame Registry",
+  "ReasonOutranked": "{0} bringt eine eigene Registry mit und wird nach der gemeinsamen geladen, daher nutzt das Spiel seine Registry. Neu bauen setzt die gemeinsame Registry wieder an die Spitze."
 }
