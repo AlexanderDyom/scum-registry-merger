@@ -1,0 +1,73 @@
+<Window x:Class="RegistryMerger.Gui.SetupWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:l="clr-namespace:RegistryMerger.Gui"
+        Style="{StaticResource AppWindow}" Title="SCUM Registry Merger"
+        Width="520" SizeToContent="Height" ResizeMode="NoResize" WindowStartupLocation="CenterScreen">
+  <StackPanel Margin="22,16,22,20">
+    <DockPanel>
+      <ComboBox x:Name="LangBox" DockPanel.Dock="Right" Width="210" VerticalAlignment="Top" SelectionChanged="LangBox_SelectionChanged">
+        <ComboBox.ItemTemplate>
+          <DataTemplate DataType="{x:Type l:LangOption}">
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="{Binding Text}"/>
+              <TextBlock Text="AI" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource Warn}" Margin="6,0,0,0"
+                         Visibility="{Binding AiVisibility}" ToolTip="{l:T AiTip}"/>
+            </StackPanel>
+          </DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+      <StackPanel>
+        <TextBlock Style="{StaticResource H1}" Text="{l:T SetupTitle}"/>
+        <TextBlock Style="{StaticResource Small}" Text="{l:T SetupSubtitle}" Margin="0,2,0,0"/>
+      </StackPanel>
+    </DockPanel>
+
+    <TextBlock Style="{StaticResource H2}" Text="{l:T GameWhere}" Margin="0,20,0,8"/>
+    <UniformGrid Columns="2">
+      <RadioButton x:Name="ClientCard" Style="{StaticResource Card}" GroupName="kind" Margin="0,0,4,0" Checked="Kind_Checked">
+        <StackPanel>
+          <StackPanel Orientation="Horizontal">
+            <TextBlock Style="{StaticResource Icon}" Text="&#xE7FC;" Margin="0,0,6,0"/>
+            <TextBlock Text="{l:T Client}" FontSize="13"/>
+          </StackPanel>
+          <TextBlock x:Name="ClientFound" FontSize="11" Margin="0,3,0,0"/>
+        </StackPanel>
+      </RadioButton>
+      <RadioButton x:Name="ServerCard" Style="{StaticResource Card}" GroupName="kind" Margin="4,0,0,0" Checked="Kind_Checked">
+        <StackPanel>
+          <StackPanel Orientation="Horizontal">
+            <TextBlock Style="{StaticResource Icon}" Text="&#xE968;" Margin="0,0,6,0"/>
+            <TextBlock Text="{l:T Server}" FontSize="13"/>
+          </StackPanel>
+          <TextBlock x:Name="ServerFound" FontSize="11" Margin="0,3,0,0"/>
+        </StackPanel>
+      </RadioButton>
+    </UniformGrid>
+    <DockPanel Margin="0,8,0,0">
+      <Button DockPanel.Dock="Right" Style="{StaticResource Btn}" Margin="6,0,0,0" Click="Browse_Click">
+        <StackPanel Orientation="Horizontal">
+          <TextBlock Style="{StaticResource Icon}" Text="&#xE8B7;" FontSize="14" Margin="0,0,6,0"/>
+          <TextBlock Text="{l:T Browse}"/>
+        </StackPanel>
+      </Button>
+      <TextBox x:Name="PathBox" Style="{StaticResource Field}" TextChanged="PathBox_TextChanged"/>
+    </DockPanel>
+    <TextBlock x:Name="PathStatus" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap"/>
+
+    <StackPanel Orientation="Horizontal" Margin="0,20,0,6">
+      <TextBlock Style="{StaticResource H2}" Text="{l:T AesKey}" Margin="0"/>
+      <TextBlock Style="{StaticResource Small}" Text="{l:T Optional}" Margin="6,1,0,0" VerticalAlignment="Center"/>
+    </StackPanel>
+    <PasswordBox x:Name="KeyBox" Style="{StaticResource KeyField}" PasswordChanged="KeyBox_PasswordChanged"/>
+    <TextBlock x:Name="KeyError" FontSize="12" Foreground="{StaticResource Danger}" Margin="0,6,0,0" TextWrapping="Wrap" Visibility="Collapsed"/>
+    <Border Background="{StaticResource WarnBg}" CornerRadius="6" Padding="10,8" Margin="0,8,0,0">
+      <TextBlock Text="{l:T KeyRecommend}" Foreground="{StaticResource Warn}" FontSize="12" TextWrapping="Wrap" LineHeight="18"/>
+    </Border>
+
+    <DockPanel Margin="0,22,0,0">
+      <Button DockPanel.Dock="Right" x:Name="ContinueButton" Style="{StaticResource Primary}" Content="{l:T Continue}" IsDefault="True" Click="Continue_Click"/>
+      <Button Style="{StaticResource Link}" Content="{l:T WhereKey}" VerticalAlignment="Center" HorizontalAlignment="Left" Click="WhereKey_Click"/>
+    </DockPanel>
+  </StackPanel>
+</Window>
