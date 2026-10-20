@@ -8,6 +8,8 @@
   name. Verified in game.
 - Older shared paks are removed after a build.
 - New warning: a pak with a registry of its own that still loads after the shared one.
+- Clearer third-party notices and a statement on game files: SCUM's assets belong to Gamepires / Jagex, the tool only
+  reads the user's own installed files, and no game files or AES key are in the repository or the releases.
 
 ## 1.0.0
 

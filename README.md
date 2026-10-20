@@ -64,7 +64,9 @@ the app. Corrections are welcome: one JSON file per language in [`Gui/Strings`](
 - The tool only reads the game's paks and writes one pak into `~mods`. It doesn't touch your mods or the game files.
 - Modded paks are for single player and servers that allow them. Don't join official or protected servers with mods
   installed.
-- This is a fan-made tool, not affiliated with Gamepires or Jagex.
+- SCUM and its assets are the property of Gamepires / Jagex. This is a fan-made tool, not affiliated with them. It
+  reads only your own installed game files and never redistributes them; the AES key is never stored in this
+  repository or in the releases. See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
 ## Which pak wins
 
