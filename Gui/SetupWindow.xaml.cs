@@ -10,6 +10,7 @@ public partial class SetupWindow : Window
     private readonly string? _client = GameLocator.FindInstall(InstallKind.Client);
     private readonly string? _server = GameLocator.FindInstall(InstallKind.Server);
     private bool _loading = true;
+    private string? _verifiedKey;
 
     public AppSettings Result { get; }
 
@@ -58,7 +59,34 @@ public partial class SetupWindow : Window
         if (dlg.ShowDialog(this) == true) PathBox.Text = dlg.FolderName;
     }
 
-    private void KeyBox_PasswordChanged(object sender, RoutedEventArgs e) => KeyError.Visibility = Visibility.Collapsed;
+    private void KeyBox_PasswordChanged(object sender, RoutedEventArgs e)
+    {
+        KeyError.Visibility = Visibility.Collapsed;
+        var verified = _verifiedKey != null && KeyBox.Password.Trim() == _verifiedKey;
+        KeyOk.Visibility = verified ? Visibility.Visible : Visibility.Collapsed;
+        MakeRefButton.IsEnabled = verified;
+    }
+
+    private async void CheckKey_Click(object sender, RoutedEventArgs e)
+    {
+        var paks = GameLocator.ResolvePaks(PathBox.Text);
+        if (paks == null) { PathCheck.Show(PathStatus, PathBox.Text, force: true); return; }
+        var key = KeyBox.Password.Trim();
+        if (key.Length == 0) return;
+        if (!await KeyCheck.ValidateAsync(paks, key, KeyError, CheckKeyButton)) return;
+        _verifiedKey = key;
+        KeyOk.Text = "\u2713 " + Loc.T("KeyWorks");
+        KeyOk.Visibility = Visibility.Visible;
+        MakeRefButton.IsEnabled = true;
+        ReferenceUi.ShowStatus(RefStatus, paks);
+    }
+
+    private async void MakeRef_Click(object sender, RoutedEventArgs e)
+    {
+        var paks = GameLocator.ResolvePaks(PathBox.Text);
+        if (paks == null || _verifiedKey == null) return;
+        await ReferenceUi.MakeAsync(paks, _verifiedKey, MakeRefButton, RefStatus);
+    }
 
     private void LangBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -78,7 +106,7 @@ public partial class SetupWindow : Window
         if (paks == null) { PathCheck.Show(PathStatus, PathBox.Text, force: true); return; }
 
         var key = KeyBox.Password.Trim();
-        if (key.Length > 0)
+        if (key.Length > 0 && key != _verifiedKey)
         {
             if (!await KeyCheck.ValidateAsync(paks, key, KeyError, ContinueButton)) return;
         }
@@ -87,6 +115,48 @@ public partial class SetupWindow : Window
         Result.Kind = ServerCard.IsChecked == true ? InstallKind.Server : InstallKind.Client;
         Result.AesKey = key;
         DialogResult = true;
+    }
+}
+
+/// <summary>The "make a reference of your game version" block of the setup and settings windows.</summary>
+internal static class ReferenceUi
+{
+    /// <summary>"There is / isn't a reference of this game version" next to the button.</summary>
+    public static void ShowStatus(TextBlock status, string? paks)
+    {
+        if (paks == null) { status.Text = ""; return; }
+        var exists = ReferenceStore.Find(GameReference.GameFingerprint(paks)) != null;
+        status.Text = exists ? "\u2713 " + Loc.T("RefExists") : Loc.T("RefMissing");
+        status.Foreground = (System.Windows.Media.Brush)status.FindResource(exists ? "Ok" : "Muted");
+    }
+
+    /// <summary>Makes the reference of the installed game version with the (checked) key and saves it where scans look.</summary>
+    public static async Task MakeAsync(string paks, string key, Button button, TextBlock status)
+    {
+        button.IsEnabled = false;
+        status.Text = Loc.T("RefMaking");
+        status.Foreground = (System.Windows.Media.Brush)status.FindResource("Text2");
+        try
+        {
+            var reference = await Task.Run(() =>
+            {
+                using var engine = MergeEngine.Open(paks, key);
+                var r = engine.MakeReference() ?? throw new InvalidOperationException(Loc.T("KeyWrong"));
+                ReferenceStore.Save(r);
+                return r;
+            });
+            status.Text = "\u2713 " + Loc.F("RefDone", reference.Fingerprint, reference.Count.ToString("N0", Loc.Instance.Culture));
+            status.Foreground = (System.Windows.Media.Brush)status.FindResource("Ok");
+        }
+        catch (Exception ex)
+        {
+            status.Text = Loc.F("RefFailed", ex.Message);
+            status.Foreground = (System.Windows.Media.Brush)status.FindResource("Danger");
+        }
+        finally
+        {
+            button.IsEnabled = true;
+        }
     }
 }
 

@@ -54,6 +54,7 @@ itself may not work right until its author updates it.
 
 Without the key the game version can't be checked, and the app says so. To check without entering the key in the app
 every time (for example on another PC with the same game version), make a **reference** of your game version once:
+with *Make reference* in the first-start window or the settings (active once the key is checked), or in the console:
 
 ```
 ScumRegistryMerger.Cli.exe make-reference --paks "<SCUM or SCUM Server folder>" --aes-file key.txt

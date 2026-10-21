@@ -130,5 +130,14 @@
   "BannerKeyText": "Bez klucza AES wpisy gry trzeba by wziąć z takiego moda. Podaj klucz, a wspólny rejestr zostanie zbudowany z wpisów samej gry.",
   "EnterKey": "Podaj klucz AES",
   "ReasonVersionMismatch": "Zbudowane dla innej wersji gry: {0}.",
-  "ReasonVersionUnchecked": "Bez klucza AES nie da się sprawdzić, dla jakiej wersji gry zbudowano mody. Podaj klucz w ustawieniach albo utwórz wzorzec swojej wersji gry wersją konsolową (make-reference)."
+  "ReasonVersionUnchecked": "Bez klucza AES nie da się sprawdzić, dla jakiej wersji gry zbudowano mody. Podaj klucz w ustawieniach albo utwórz wzorzec swojej wersji gry wersją konsolową (make-reference).",
+  "RefInfo": "Możesz utworzyć wzorzec swojej wersji gry: wtedy mody da się sprawdzać według niego także bez klucza (również na innym komputerze z tą samą wersją gry). Twórz go od nowa po każdej aktualizacji gry.",
+  "MakeReference": "Utwórz wzorzec",
+  "RefLater": "Można to zrobić także później w ustawieniach.",
+  "RefNeedsKey": "Najpierw podaj i sprawdź klucz AES.",
+  "RefMaking": "Tworzę wzorzec…",
+  "RefDone": "Wzorzec zapisany: wersja gry {0}, wpisów: {1}.",
+  "RefExists": "Wzorzec tej wersji gry istnieje.",
+  "RefMissing": "Nie ma jeszcze wzorca tej wersji gry.",
+  "RefFailed": "Nie udało się utworzyć wzorca: {0}"
 }

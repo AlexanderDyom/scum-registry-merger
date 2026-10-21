@@ -130,5 +130,14 @@
   "BannerKeyText": "Bez AES klíče by se záznamy hry musely vzít z takového modu. Zadejte klíč a společný registr se sestaví ze záznamů samotné hry.",
   "EnterKey": "Zadat AES klíč",
   "ReasonVersionMismatch": "Sestaveny pro jinou verzi hry: {0}.",
-  "ReasonVersionUnchecked": "Bez AES klíče nelze ověřit, pro jakou verzi hry jsou mody sestavené. Zadejte klíč v nastavení, nebo si konzolovou verzí vytvořte referenci své verze hry (make-reference)."
+  "ReasonVersionUnchecked": "Bez AES klíče nelze ověřit, pro jakou verzi hry jsou mody sestavené. Zadejte klíč v nastavení, nebo si konzolovou verzí vytvořte referenci své verze hry (make-reference).",
+  "RefInfo": "Můžete si vytvořit referenci své verze hry: pak lze mody podle ní ověřovat i bez klíče (i na jiném počítači se stejnou verzí hry). Po každé aktualizaci hry ji vytvořte znovu.",
+  "MakeReference": "Vytvořit referenci",
+  "RefLater": "Můžete to udělat i později v nastavení.",
+  "RefNeedsKey": "Nejdřív zadejte a ověřte AES klíč.",
+  "RefMaking": "Vytvářím referenci…",
+  "RefDone": "Reference uložena: verze hry {0}, záznamů: {1}.",
+  "RefExists": "Reference této verze hry existuje.",
+  "RefMissing": "Reference této verze hry zatím není.",
+  "RefFailed": "Referenci se nepodařilo vytvořit: {0}"
 }

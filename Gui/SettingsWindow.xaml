@@ -37,6 +37,12 @@
         </DockPanel>
         <TextBlock x:Name="KeyError" FontSize="12" Foreground="{StaticResource Danger}" Margin="0,6,0,0" TextWrapping="Wrap" Visibility="Collapsed"/>
         <TextBlock x:Name="KeyHint" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap"/>
+        <TextBlock Style="{StaticResource Small}" Text="{l:T RefInfo}" Margin="0,14,0,0" LineHeight="18"/>
+        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+          <Button x:Name="MakeRefButton" Style="{StaticResource Btn}" Content="{l:T MakeReference}" IsEnabled="False" Click="MakeRef_Click"
+                  ToolTip="{l:T RefNeedsKey}" ToolTipService.ShowOnDisabled="True"/>
+          <TextBlock x:Name="RefStatus" FontSize="12" VerticalAlignment="Center" Margin="10,0,0,0" TextWrapping="Wrap" MaxWidth="330"/>
+        </StackPanel>
       </StackPanel>
     </Border>
 

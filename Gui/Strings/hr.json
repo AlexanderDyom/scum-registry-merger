@@ -130,5 +130,14 @@
   "BannerKeyText": "Bez AES ključa zapisi igre morali bi se uzeti iz takvog moda. Unesi ključ i zajednički registar izgradit će se iz zapisa same igre.",
   "EnterKey": "Unesi AES ključ",
   "ReasonVersionMismatch": "Izrađeni za drugu verziju igre: {0}.",
-  "ReasonVersionUnchecked": "Bez AES ključa ne može se provjeriti za koju su verziju igre modovi izrađeni. Unesi ključ u postavkama ili konzolnom verzijom napravi referenciju svoje verzije igre (make-reference)."
+  "ReasonVersionUnchecked": "Bez AES ključa ne može se provjeriti za koju su verziju igre modovi izrađeni. Unesi ključ u postavkama ili konzolnom verzijom napravi referenciju svoje verzije igre (make-reference).",
+  "RefInfo": "Možeš napraviti referenciju svoje verzije igre: tada se modovi mogu provjeravati prema njoj i bez ključa (i na drugom računalu s istom verzijom igre). Napravi je ponovno nakon svakog ažuriranja igre.",
+  "MakeReference": "Napravi referenciju",
+  "RefLater": "To možeš napraviti i kasnije u postavkama.",
+  "RefNeedsKey": "Najprije unesi i provjeri AES ključ.",
+  "RefMaking": "Izrađujem referenciju…",
+  "RefDone": "Referencija spremljena: verzija igre {0}, zapisa: {1}.",
+  "RefExists": "Referencija ove verzije igre postoji.",
+  "RefMissing": "Referencije ove verzije igre još nema.",
+  "RefFailed": "Nije moguće napraviti referenciju: {0}"
 }

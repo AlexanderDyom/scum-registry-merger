@@ -130,5 +130,14 @@
   "BannerKeyText": "Ohne AES-Schlüssel müssten die Spieleinträge aus so einem Mod kommen. Gib den Schlüssel ein, dann wird die gemeinsame Registry aus den Einträgen des Spiels gebaut.",
   "EnterKey": "AES-Schlüssel eingeben",
   "ReasonVersionMismatch": "Für eine andere Spielversion gebaut: {0}.",
-  "ReasonVersionUnchecked": "Ohne AES-Schlüssel lässt sich nicht prüfen, für welche Spielversion die Mods gebaut sind. Gib den Schlüssel in den Einstellungen ein oder erstelle mit dem Konsolenwerkzeug eine Referenz deiner Spielversion (make-reference)."
+  "ReasonVersionUnchecked": "Ohne AES-Schlüssel lässt sich nicht prüfen, für welche Spielversion die Mods gebaut sind. Gib den Schlüssel in den Einstellungen ein oder erstelle mit dem Konsolenwerkzeug eine Referenz deiner Spielversion (make-reference).",
+  "RefInfo": "Du kannst eine Referenz deiner Spielversion erstellen: Dann lassen sich Mods auch ohne Schlüssel damit prüfen (auch auf einem anderen PC mit derselben Spielversion). Erstelle sie nach jedem Spielupdate neu.",
+  "MakeReference": "Referenz erstellen",
+  "RefLater": "Das geht auch später in den Einstellungen.",
+  "RefNeedsKey": "Gib zuerst den AES-Schlüssel ein und prüfe ihn.",
+  "RefMaking": "Referenz wird erstellt…",
+  "RefDone": "Referenz gespeichert: Spielversion {0}, {1} Einträge.",
+  "RefExists": "Für diese Spielversion gibt es eine Referenz.",
+  "RefMissing": "Für diese Spielversion gibt es noch keine Referenz.",
+  "RefFailed": "Referenz konnte nicht erstellt werden: {0}"
 }

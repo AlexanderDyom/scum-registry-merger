@@ -6,6 +6,9 @@
   With the AES key the game version check works as before. Without it, the app says the version can't be checked,
   unless you made a reference of your game version yourself with `ScumRegistryMerger.Cli make-reference`, which now
   saves it where the app looks for it (`%APPDATA%\ScumRegistryMerger\reference`). The `--offline` option is gone.
+- The first-start window and the settings can make that reference too: a *Make reference* button, active once the
+  AES key is entered and checked, and a reminder to make it again after every game update. The first-start window
+  also got a *Check* button for the key.
 
 ## 1.1.2
 

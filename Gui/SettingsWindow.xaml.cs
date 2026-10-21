@@ -16,6 +16,7 @@ public partial class SettingsWindow : Window
     private Updater.Release? _release;
     private bool _checked;
     private bool _loading = true;
+    private string? _verifiedKey;
 
     public AppSettings Result { get; }
     public bool RegistryDeleted { get; private set; }
@@ -33,6 +34,8 @@ public partial class SettingsWindow : Window
         (settings.Kind == InstallKind.Server ? ServerChip : ClientChip).IsChecked = true;
         PathBox.Text = settings.GameFolder ?? "";
         KeyBox.Password = settings.AesKey ?? "";
+        // a saved key was checked when it was saved
+        _verifiedKey = string.IsNullOrWhiteSpace(settings.AesKey) ? null : settings.AesKey.Trim();
         AutoCheck.IsChecked = settings.CheckUpdates;
         BuildLanguages();
         _loading = false;
@@ -75,6 +78,8 @@ public partial class SettingsWindow : Window
 
         PathCheck.Show(PathStatus, PathBox.Text);
         var hasKey = KeyBox.Password.Trim().Length > 0;
+        MakeRefButton.IsEnabled = _verifiedKey != null && KeyBox.Password.Trim() == _verifiedKey;
+        if (!_refBusy) ReferenceUi.ShowStatus(RefStatus, GameLocator.ResolvePaks(PathBox.Text));
         KeyHint.Text = hasKey ? Loc.T("KeyStoredHint") : Loc.T("KeyRecommendShort");
         KeyHint.Foreground = (Brush)FindResource(hasKey ? "Text2" : "Warn");
 
@@ -139,9 +144,22 @@ public partial class SettingsWindow : Window
         if (KeyBox.Password.Trim().Length == 0) return;
         if (await KeyCheck.ValidateAsync(paks, KeyBox.Password, KeyError, CheckKeyButton))
         {
+            _verifiedKey = KeyBox.Password.Trim();
+            MakeRefButton.IsEnabled = true;
             KeyHint.Text = "✓ " + Loc.T("KeyWorks");
             KeyHint.Foreground = (Brush)FindResource("Ok");
         }
+    }
+
+    private bool _refBusy;
+
+    private async void MakeRef_Click(object sender, RoutedEventArgs e)
+    {
+        var paks = GameLocator.ResolvePaks(PathBox.Text);
+        if (paks == null || _verifiedKey == null) return;
+        _refBusy = true;
+        try { await ReferenceUi.MakeAsync(paks, _verifiedKey, MakeRefButton, RefStatus); }
+        finally { _refBusy = false; }
     }
 
     private async void Check_Click(object sender, RoutedEventArgs e)
