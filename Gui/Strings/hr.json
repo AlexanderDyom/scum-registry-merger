@@ -130,5 +130,5 @@
   "BannerKeyText": "Bez AES ključa zapisi igre morali bi se uzeti iz takvog moda. Unesi ključ i zajednički registar izgradit će se iz zapisa same igre.",
   "EnterKey": "Unesi AES ključ",
   "ReasonVersionMismatch": "Izrađeni za drugu verziju igre: {0}.",
-  "ReasonVersionUnchecked": "Bez AES ključa ne može se provjeriti za koju su verziju igre modovi izrađeni: za ovu verziju igre još nema referencije. Unesi ključ da budeš siguran."
+  "ReasonVersionUnchecked": "Bez AES ključa ne može se provjeriti za koju su verziju igre modovi izrađeni. Unesi ključ u postavkama ili konzolnom verzijom napravi referenciju svoje verzije igre (make-reference)."
 }

@@ -73,9 +73,8 @@ public partial class MainWindow : Window
             GameReference? reference = null;
             if (string.IsNullOrWhiteSpace(key))
             {
-                // without the key, check the mods against the published reference of the installed game version
-                var fingerprint = await Task.Run(() => GameReference.GameFingerprint(paks));
-                reference = await ReferenceStore.FindAsync(fingerprint);
+                // without the key, check the mods against a reference of this game version made with make-reference, if any
+                reference = await Task.Run(() => ReferenceStore.Find(GameReference.GameFingerprint(paks)));
             }
             _scan = await Task.Run(() =>
             {

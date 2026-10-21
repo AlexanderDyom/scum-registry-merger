@@ -130,5 +130,5 @@
   "BannerKeyText": "Bez klucza AES wpisy gry trzeba by wziąć z takiego moda. Podaj klucz, a wspólny rejestr zostanie zbudowany z wpisów samej gry.",
   "EnterKey": "Podaj klucz AES",
   "ReasonVersionMismatch": "Zbudowane dla innej wersji gry: {0}.",
-  "ReasonVersionUnchecked": "Bez klucza AES nie da się sprawdzić, dla jakiej wersji gry zbudowano mody: dla tej wersji gry nie ma jeszcze wzorca. Podaj klucz, aby mieć pewność."
+  "ReasonVersionUnchecked": "Bez klucza AES nie da się sprawdzić, dla jakiej wersji gry zbudowano mody. Podaj klucz w ustawieniach albo utwórz wzorzec swojej wersji gry wersją konsolową (make-reference)."
 }

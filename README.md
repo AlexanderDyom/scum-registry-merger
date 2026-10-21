@@ -47,24 +47,23 @@ The key is stored encrypted for your Windows user (DPAPI) and never leaves your 
 
 ### Game version check
 
-Each mod's registry also carries the game's records of the game version the mod was built for. The app compares them
-with the installed game. A mod built for another version gets an *other game version* badge, and an orange **!** until it is in the shared registry. Its
-outdated records never get into the shared registry, but the mod itself may not work right until its author updates
-it.
+Each mod's registry also carries the game's records of the game version the mod was built for. With the AES key the
+app compares them with the installed game. A mod built for another version gets an *other game version* badge, and an
+orange **!** until it is in the shared registry. Its outdated records never get into the shared registry, but the mod
+itself may not work right until its author updates it.
 
-Without the AES key, the comparison uses a **reference** of the installed game version: 64-bit hashes of the game's
-record names, no game file names or content. It's downloaded once from this repository's [`reference/`](reference)
-folder. If every installed mod is built for another game version, the app asks for the AES key instead of building a
-registry from outdated records.
-
-After a SCUM update, someone with the key publishes the new reference:
+Without the key the game version can't be checked, and the app says so. To check without entering the key in the app
+every time (for example on another PC with the same game version), make a **reference** of your game version once:
 
 ```
-ScumRegistryMerger.Cli.exe make-reference --paks "<SCUM folder>" --aes-file key.txt --out reference
-ScumRegistryMerger.Cli.exe make-reference --paks "<SCUM Server folder>" --aes-file key.txt --out reference
+ScumRegistryMerger.Cli.exe make-reference --paks "<SCUM or SCUM Server folder>" --aes-file key.txt
 ```
 
-Then they commit the new `.ref` files to `reference/`. The client and the dedicated server have different references.
+It goes to `%APPDATA%\ScumRegistryMerger\reference\<fingerprint>.ref`. The window app and the console tool use it
+from there automatically when no key is set; you can copy that file to other computers with the same game version.
+A reference holds only 64-bit hashes of the game's record names, no game file names or content, and is never
+uploaded. Make a new one after each game update. If every installed mod is built for another game version, the app
+then asks for the AES key instead of building a registry from outdated records.
 
 ### Dedicated servers
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.3
+
+- Game version references are no longer published or downloaded. The `reference/` folder is gone from the repository.
+  With the AES key the game version check works as before. Without it, the app says the version can't be checked,
+  unless you made a reference of your game version yourself with `ScumRegistryMerger.Cli make-reference`, which now
+  saves it where the app looks for it (`%APPDATA%\ScumRegistryMerger\reference`). The `--offline` option is gone.
+
 ## 1.1.2
 
 - Game version check. Each mod's registry is compared with the installed game: a mod built for another game version

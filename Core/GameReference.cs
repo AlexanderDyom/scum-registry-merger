@@ -1,7 +1,7 @@
 // What the game's own registry contains, without the game's files: a fingerprint of the installed game version and
-// 64-bit hashes of every record's object path. Made once per game version by someone with the AES key
-// (`ScumRegistryMerger.Cli make-reference`) and shared, so users without the key can still tell which mods were built
-// for another game version. Only hashes are stored: no game file names or content.
+// 64-bit hashes of every record's object path. A player with the AES key makes it for their game version
+// (`ScumRegistryMerger.Cli make-reference`); later scans without the key use it to tell which mods were built for
+// another game version. Only hashes are stored: no game file names or content. Nothing is published or downloaded.
 using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;

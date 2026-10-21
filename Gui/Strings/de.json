@@ -130,5 +130,5 @@
   "BannerKeyText": "Ohne AES-Schlüssel müssten die Spieleinträge aus so einem Mod kommen. Gib den Schlüssel ein, dann wird die gemeinsame Registry aus den Einträgen des Spiels gebaut.",
   "EnterKey": "AES-Schlüssel eingeben",
   "ReasonVersionMismatch": "Für eine andere Spielversion gebaut: {0}.",
-  "ReasonVersionUnchecked": "Ohne AES-Schlüssel lässt sich nicht prüfen, für welche Spielversion die Mods gebaut sind: Für diese Spielversion gibt es noch keine Referenz. Gib den Schlüssel ein, um sicherzugehen."
+  "ReasonVersionUnchecked": "Ohne AES-Schlüssel lässt sich nicht prüfen, für welche Spielversion die Mods gebaut sind. Gib den Schlüssel in den Einstellungen ein oder erstelle mit dem Konsolenwerkzeug eine Referenz deiner Spielversion (make-reference)."
 }

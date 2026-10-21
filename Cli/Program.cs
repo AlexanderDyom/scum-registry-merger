@@ -27,7 +27,8 @@ static class Cli
           ScumRegistryMerger.Cli pack <AssetRegistry.bin> <out.pak>  pack a registry as SCUM/AssetRegistry.bin (pak v11)
           ScumRegistryMerger.Cli make-reference [--paks <game>] (--aes <hex> | --aes-file <file>) [--out <folder>]
                        write <fingerprint>.ref: what the installed game version's registry contains (hashes only), so
-                       players without the AES key can check their mods against it (publish it in reference/)
+                       mods can be checked against it later without the AES key. Default folder:
+                       %APPDATA%\ScumRegistryMerger\reference, where the window app and this tool look for it
 
         merge (default):
           --paks       the game's Paks folder (default: found from the current folder or the program's folder)
@@ -39,8 +40,7 @@ static class Cli
                        and registry-only paks), in load order: later = higher priority
           --no-ship-filter  take every record a mod registry adds, not only those of packages its pak ships
           --reference  a game reference (.ref file, or a folder with <fingerprint>.ref) for checks without the AES key;
-                       default: the cache in %APPDATA%\ScumRegistryMerger\reference, then the project's GitHub
-          --offline    don't download a game reference
+                       default: %APPDATA%\ScumRegistryMerger\reference (see make-reference)
         """;
 
     public static int Run(string[] args)
@@ -109,7 +109,6 @@ static class Cli
     static int Merge(string[] args)
     {
         string? paks = null, aes = Environment.GetEnvironmentVariable("SCUM_AES_KEY"), reference = null;
-        var offline = false;
         var options = new BuildOptions();
         for (var i = 0; i < args.Length; i++)
         {
@@ -124,7 +123,6 @@ static class Cli
                 case "--no-ship-filter": options.ShipFilter = false; break;
                 case "--dry-run": options.DryRun = true; break;
                 case "--reference": reference = Next(); break;
-                case "--offline": offline = true; break;
                 case "--mods":
                     options.Mods ??= [];
                     while (i + 1 < args.Length && !args[i + 1].StartsWith("--")) options.Mods.Add(Path.GetFullPath(args[++i]));
@@ -142,14 +140,14 @@ static class Cli
         if (reference != null)
             engine.Reference = GameReference.Load(Directory.Exists(reference) ? Path.Combine(reference, GameReference.FileName(fingerprint)) : reference);
         else if (string.IsNullOrWhiteSpace(aes))
-            engine.Reference = ReferenceStore.FindAsync(fingerprint, download: !offline).GetAwaiter().GetResult();
+            engine.Reference = ReferenceStore.Find(fingerprint);
         var scan = engine.Scan(options.OutputPak);
         Console.WriteLine($"game registry: {(scan.GameRegistryReadable ? "readable" : $"not readable ({scan.EncryptedPaks} encrypted paks{(string.IsNullOrWhiteSpace(aes) ? ", no AES key given" : "")})")}");
         Console.WriteLine($"game version {fingerprint}: " + scan.VersionCheck switch
         {
             VersionCheck.Game => "mods checked against the game's own registry",
-            VersionCheck.Reference => "mods checked against the published reference of this game version",
-            _ => "no reference for this game version: mods can't be checked without the AES key",
+            VersionCheck.Reference => "mods checked against the local reference of this game version",
+            _ => "mods can't be checked without the AES key (or a reference made with make-reference)",
         });
         foreach (var m in scan.Mods)
             Console.WriteLine(m.State == ModState.Unreadable
@@ -176,7 +174,7 @@ static class Cli
 
     static int MakeReference(string[] args)
     {
-        string? paks = null, aes = Environment.GetEnvironmentVariable("SCUM_AES_KEY"), outDir = ".";
+        string? paks = null, aes = Environment.GetEnvironmentVariable("SCUM_AES_KEY"), outDir = null;
         for (var i = 0; i < args.Length; i++)
         {
             string Next() => i + 1 < args.Length ? args[++i] : throw new InvalidOperationException($"{args[i]} needs a value.");
@@ -194,9 +192,14 @@ static class Cli
         if (string.IsNullOrWhiteSpace(aes)) throw new InvalidOperationException("make-reference needs the AES key (--aes or --aes-file).");
         using var engine = MergeEngine.Open(paks, aes);
         var reference = engine.MakeReference() ?? throw new InvalidOperationException("The game's registry can't be read with this key.");
-        Directory.CreateDirectory(outDir);
-        var file = Path.Combine(outDir, GameReference.FileName(reference.Fingerprint));
-        reference.Save(file);
+        string file;
+        if (outDir == null) file = ReferenceStore.Save(reference);
+        else
+        {
+            Directory.CreateDirectory(outDir);
+            file = Path.Combine(outDir, GameReference.FileName(reference.Fingerprint));
+            reference.Save(file);
+        }
         Console.WriteLine($"{paks}: game version {reference.Fingerprint}, {reference.Count} records -> {file} ({new FileInfo(file).Length:N0} bytes)");
         return 0;
     }

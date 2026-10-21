@@ -130,5 +130,5 @@
   "BannerKeyText": "Without the AES key the game's records would have to come from such a mod. Enter the key, and the shared registry is built from the game's own records.",
   "EnterKey": "Enter AES key",
   "ReasonVersionMismatch": "Built for another game version: {0}.",
-  "ReasonVersionUnchecked": "Without the AES key the tool can't tell which game version the mods were built for: there's no reference for this game version yet. Enter the key to be sure."
+  "ReasonVersionUnchecked": "Without the AES key the tool can't tell which game version the mods were built for. Enter the key in the settings, or make a reference of your game version with the console tool (make-reference)."
 }

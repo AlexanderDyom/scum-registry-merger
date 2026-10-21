@@ -130,5 +130,5 @@
   "BannerKeyText": "Bez AES klíče by se záznamy hry musely vzít z takového modu. Zadejte klíč a společný registr se sestaví ze záznamů samotné hry.",
   "EnterKey": "Zadat AES klíč",
   "ReasonVersionMismatch": "Sestaveny pro jinou verzi hry: {0}.",
-  "ReasonVersionUnchecked": "Bez AES klíče nelze ověřit, pro jakou verzi hry jsou mody sestavené: pro tuto verzi hry zatím není referenční soubor. Zadejte klíč, ať je to jisté."
+  "ReasonVersionUnchecked": "Bez AES klíče nelze ověřit, pro jakou verzi hry jsou mody sestavené. Zadejte klíč v nastavení, nebo si konzolovou verzí vytvořte referenci své verze hry (make-reference)."
 }

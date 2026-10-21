@@ -53,9 +53,9 @@ public sealed class ModInfo
 /// <summary>How the scan knows what the installed game's registry contains.</summary>
 public enum VersionCheck
 {
-    /// <summary>Not at all (no AES key, no reference for this game version): mods can't be checked.</summary>
+    /// <summary>Not at all (no AES key, no local reference of this game version): mods can't be checked.</summary>
     None,
-    /// <summary>From a published reference of this game version (no AES key needed).</summary>
+    /// <summary>From a local reference of this game version, made earlier with the AES key (make-reference).</summary>
     Reference,
     /// <summary>From the game's own registry (AES key).</summary>
     Game,
@@ -391,7 +391,7 @@ public sealed class MergeEngine : IDisposable
             if (manifest != null && manifest.Base.StartsWith("mod:", StringComparison.Ordinal)) result.BuiltWithoutKey = true;
         }
 
-        // what the installed game version contains: its own registry, or a published reference of this version
+        // what the installed game version contains: its own registry, or a local reference of this version (make-reference)
         result.GameFingerprint = GameReference.GameFingerprint(Paks);
         var (game, check) = GameRecords(stockReg, result.GameFingerprint);
         result.VersionCheck = check;
