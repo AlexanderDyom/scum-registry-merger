@@ -123,5 +123,12 @@
   "ReasonOutranked": "{0} má vlastní registr a načítá se po společném, takže hra používá jeho registr. Nové sestavení dá společný registr znovu navrch.",
   "StateUnreadable": "Nelze přečíst",
   "ReasonUnreadable": "Registr se nepodařilo přečíst: {0}. Jeho nové předměty nebudou ve společném registru.",
-  "TipUnreadable": "Registr modu nelze přečíst: {0}"
+  "TipUnreadable": "Registr modu nelze přečíst: {0}",
+  "BadgeOtherVersion": "jiná verze hry",
+  "TipVersionMismatch": "Sestaven pro jinou verzi hry: záznamů jiné verze — {0}, chybí záznamů hry — {1}. Tyto záznamy se do společného registru nedostanou, ale samotný mod nemusí fungovat správně.",
+  "BannerKeyTitle": "Všechny mody jsou sestavené pro jinou verzi hry",
+  "BannerKeyText": "Bez AES klíče by se záznamy hry musely vzít z takového modu. Zadejte klíč a společný registr se sestaví ze záznamů samotné hry.",
+  "EnterKey": "Zadat AES klíč",
+  "ReasonVersionMismatch": "Sestaveny pro jinou verzi hry: {0}.",
+  "ReasonVersionUnchecked": "Bez AES klíče nelze ověřit, pro jakou verzi hry jsou mody sestavené: pro tuto verzi hry zatím není referenční soubor. Zadejte klíč, ať je to jisté."
 }

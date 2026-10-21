@@ -42,6 +42,23 @@ public sealed class ModInfo
     public string? RegistryHash { get; set; }
     /// <summary>Why the registry can't be read (State = Unreadable).</summary>
     public string? Error { get; set; }
+    /// <summary>Records its registry carries as game records that the installed game doesn't have (another game version).</summary>
+    public int StaleRecords { get; set; }
+    /// <summary>Records of the installed game its registry lacks (built for another game version).</summary>
+    public int MissingGameRecords { get; set; }
+    /// <summary>The mod's registry was built for another game version than the installed one.</summary>
+    public bool VersionMismatch => StaleRecords > 0 || MissingGameRecords > 0;
+}
+
+/// <summary>How the scan knows what the installed game's registry contains.</summary>
+public enum VersionCheck
+{
+    /// <summary>Not at all (no AES key, no reference for this game version): mods can't be checked.</summary>
+    None,
+    /// <summary>From a published reference of this game version (no AES key needed).</summary>
+    Reference,
+    /// <summary>From the game's own registry (AES key).</summary>
+    Game,
 }
 
 public sealed class ScanResult
@@ -66,6 +83,20 @@ public sealed class ScanResult
     public string? SharedPak { get; set; }
     /// <summary>Paks with a registry of their own that load after the shared one: the game uses theirs.</summary>
     public List<string> Outranking { get; } = [];
+    /// <summary>How mods were checked against the installed game version.</summary>
+    public VersionCheck VersionCheck { get; set; }
+    /// <summary>Fingerprint of the installed game version (names and sizes of its paks).</summary>
+    public string GameFingerprint { get; set; } = "";
+
+    public int VersionMismatchCount => Mods.Count(m => m.VersionMismatch);
+    /// <summary>
+    /// The AES key is needed for a correct build: without it the game's records would come from a mod built for another
+    /// game version, or nobody can tell which version the mods were built for.
+    /// </summary>
+    public bool NeedsKey => VersionCheck == VersionCheck.Reference && AnyRegistryMods
+        && !Mods.Any(m => m.State is ModState.Included or ModState.Missing && !m.VersionMismatch);
+    /// <summary>No AES key and no reference for this game version: which version the mods were built for is unknown.</summary>
+    public bool VersionUnchecked => VersionCheck == VersionCheck.None && AnyRegistryMods;
 
     public int MissingCount => Mods.Count(m => m.State == ModState.Missing);
     public int UnreadableCount => Mods.Count(m => m.State == ModState.Unreadable);
@@ -139,6 +170,43 @@ public sealed class MergeEngine : IDisposable
 
     public string Paks { get; }
     public int EncryptedPaks { get; }
+
+    /// <summary>
+    /// What the installed game's registry contains, for scans without the AES key (see GameReference). Ignored when the
+    /// game's own registry is readable, or when its fingerprint is not the installed game's.
+    /// </summary>
+    public GameReference? Reference { get; set; }
+
+    /// <summary>The installed game's reference, made from its own registry (needs the AES key); null without it.</summary>
+    public GameReference? MakeReference()
+    {
+        var stock = StockPak();
+        return stock == null ? null : GameReference.FromRegistry(AssetRegistry.Load(PakEntryReader.Read(Registry(stock)!)), GameReference.GameFingerprint(Paks));
+    }
+
+    /// <summary>The usable reference: the game's own registry when readable, else <see cref="Reference"/> if it fits.</summary>
+    private (GameReference? Ref, VersionCheck Check) GameRecords(AssetRegistry? stockReg, string fingerprint)
+    {
+        if (stockReg != null) return (GameReference.FromRegistry(stockReg, fingerprint), VersionCheck.Game);
+        if (Reference != null && Reference.Fingerprint == fingerprint) return (Reference, VersionCheck.Reference);
+        return (null, VersionCheck.None);
+    }
+
+    /// <summary>(records of other game versions, missing game records) of a mod registry against the game's records.</summary>
+    private static (int Stale, int Missing) CompareWithGame(AssetRegistry reg, Func<string, bool> ships, GameReference game)
+    {
+        var modHashes = new HashSet<ulong>(reg.Assets.Count);
+        var stale = 0;
+        foreach (var a in reg.Assets)
+        {
+            var path = reg.NameText(a.ObjectPath);
+            var h = GameReference.Hash(path);
+            modHashes.Add(h);
+            if (!game.Contains(h) && !ships(reg.NameText(a.PackageName))) stale++;
+        }
+        var missing = game.Hashes.Count(h => !modHashes.Contains(h));
+        return (stale, missing);
+    }
 
     /// <summary>
     /// Where the next shared pak goes: patch number 999, or one above the highest patch number any other pak under Paks
@@ -310,17 +378,24 @@ public sealed class MergeEngine : IDisposable
 
         // the game's registry
         HashSet<string>? stockPaths = null;
+        AssetRegistry? stockReg = null;
         var stock = StockPak();
         if (stock != null)
         {
             log?.Report("game registry");
             var bytes = PakEntryReader.Read(Registry(stock)!);
-            var reg = AssetRegistry.Load(bytes);
-            stockPaths = reg.Assets.Select(a => reg.NameText(a.ObjectPath)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            stockReg = AssetRegistry.Load(bytes);
+            stockPaths = stockReg.Assets.Select(a => stockReg.NameText(a.ObjectPath)).ToHashSet(StringComparer.OrdinalIgnoreCase);
             result.GameRegistryReadable = true;
             if (manifest is { Base: "game", BaseHash: not null } && manifest.BaseHash != Hash(bytes)) result.GameUpdated = true;
             if (manifest != null && manifest.Base.StartsWith("mod:", StringComparison.Ordinal)) result.BuiltWithoutKey = true;
         }
+
+        // what the installed game version contains: its own registry, or a published reference of this version
+        result.GameFingerprint = GameReference.GameFingerprint(Paks);
+        var (game, check) = GameRecords(stockReg, result.GameFingerprint);
+        result.VersionCheck = check;
+        Func<string, bool>? inGame = stockPaths != null ? stockPaths.Contains : game != null ? game.Contains : null;
 
         // mods: shipped records of each, and (without the game registry) the records each carries as game records
         var shippedByMod = new Dictionary<ModInfo, List<(string Path, string Asset)>>();
@@ -353,16 +428,17 @@ public sealed class MergeEngine : IDisposable
             {
                 var path = reg.NameText(a.ObjectPath);
                 if (ships(reg.NameText(a.PackageName))) shipped.Add((path, reg.NameText(a.AssetName)));
-                else if (stockPaths == null) carriedAsGame[path] = carriedAsGame.GetValueOrDefault(path) + 1;
+                else if (inGame == null) carriedAsGame[path] = carriedAsGame.GetValueOrDefault(path) + 1;
             }
             shippedByMod[info] = shipped;
+            if (game != null) (info.StaleRecords, info.MissingGameRecords) = CompareWithGame(reg, ships, game);
         }
 
         foreach (var info in result.Mods)
         {
             if (info.State == ModState.Unreadable) continue;
             if (!info.HasRegistry) { info.State = ModState.NotNeeded; continue; }
-            var own = shippedByMod[info].Where(r => stockPaths != null ? !stockPaths.Contains(r.Path) : !carriedAsGame.ContainsKey(r.Path)).ToList();
+            var own = shippedByMod[info].Where(r => inGame != null ? !inGame(r.Path) : !carriedAsGame.ContainsKey(r.Path)).ToList();
             info.NewRecords = own.Count;
             info.Sample.AddRange(own.Select(r => r.Asset).Distinct(StringComparer.OrdinalIgnoreCase).Take(6));
             if (own.Count == 0) { info.State = ModState.NotNeeded; continue; }
@@ -448,12 +524,24 @@ public sealed class MergeEngine : IDisposable
         }
         else
         {
-            log?.Report($"base: {mods[0].Name} (no AES key: the game's records come from this mod's copy)");
-            var bytes = registries[mods[0]];
+            // no AES key: the game's records come from one mod's copy. With a reference of the installed game version, that
+            // copy must match it exactly; otherwise the build would ship another game version's records.
+            var baseMod = mods[0];
+            var (game, _) = GameRecords(null, GameReference.GameFingerprint(Paks));
+            if (game != null)
+            {
+                baseMod = mods.FirstOrDefault(v => CompareWithGame(AssetRegistry.Load(registries[v]), ShipsIn(v), game) is (0, 0))
+                    ?? throw new InvalidOperationException(
+                        "Every mod's registry was built for another game version. Enter the game's AES key, so the shared registry is built from the game's own records.");
+            }
+            log?.Report($"base: {baseMod.Name} (no AES key: the game's records come from this mod's copy)");
+            var bytes = registries[baseMod];
             merged = AssetRegistry.Load(bytes);
-            manifest.Base = "mod:" + mods[0].Name;
+            manifest.Base = "mod:" + baseMod.Name;
             manifest.BaseHash = Hash(bytes);
-            manifest.Mods.Add(new ManifestMod { File = mods[0].Name, Hash = Hash(bytes) });
+            manifest.Mods.Add(new ManifestMod { File = baseMod.Name, Hash = Hash(bytes) });
+            mods.Remove(baseMod);
+            mods.Insert(0, baseMod);
             first = 1;
         }
 

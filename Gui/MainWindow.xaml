@@ -84,6 +84,9 @@
                         <Border Background="{StaticResource WarnBg}" CornerRadius="4" Padding="6,1" Margin="8,0,0,0" VerticalAlignment="Center" Visibility="{Binding BadgeVisibility}">
                           <TextBlock Text="{Binding Badge}" FontSize="11" Foreground="{StaticResource Warn}"/>
                         </Border>
+                        <Border Background="{StaticResource OrangeBg}" CornerRadius="4" Padding="6,1" Margin="8,0,0,0" VerticalAlignment="Center" Visibility="{Binding VersionBadgeVisibility}">
+                          <TextBlock Text="{Binding VersionBadge}" FontSize="11" Foreground="{StaticResource Orange}"/>
+                        </Border>
                       </StackPanel>
                       <TextBlock Text="{Binding FileName}" FontSize="11" Foreground="{StaticResource Muted}" TextTrimming="CharacterEllipsis"/>
                     </StackPanel>

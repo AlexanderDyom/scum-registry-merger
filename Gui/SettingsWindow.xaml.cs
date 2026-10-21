@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using Microsoft.Win32;
 
@@ -19,8 +20,9 @@ public partial class SettingsWindow : Window
     public AppSettings Result { get; }
     public bool RegistryDeleted { get; private set; }
 
-    public SettingsWindow(AppSettings settings, Updater.Release? release)
+    public SettingsWindow(AppSettings settings, Updater.Release? release, bool focusKey = false)
     {
+        if (focusKey) Loaded += (_, _) => { KeyBox.Focus(); Keyboard.Focus(KeyBox); };
         Result = settings;
         _release = release;
         _checked = release != null;

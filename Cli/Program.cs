@@ -25,6 +25,9 @@ static class Cli
           ScumRegistryMerger.Cli verify <AssetRegistry.bin>     parse + re-save, compare byte for byte
           ScumRegistryMerger.Cli list <AssetRegistry.bin> [--tags]  print ObjectPath, AssetClass, PackageName of every record
           ScumRegistryMerger.Cli pack <AssetRegistry.bin> <out.pak>  pack a registry as SCUM/AssetRegistry.bin (pak v11)
+          ScumRegistryMerger.Cli make-reference [--paks <game>] (--aes <hex> | --aes-file <file>) [--out <folder>]
+                       write <fingerprint>.ref: what the installed game version's registry contains (hashes only), so
+                       players without the AES key can check their mods against it (publish it in reference/)
 
         merge (default):
           --paks       the game's Paks folder (default: found from the current folder or the program's folder)
@@ -35,6 +38,9 @@ static class Cli
           --mods       mod paks to merge (default: every *_P.pak under Paks that has SCUM/AssetRegistry.bin, except --out
                        and registry-only paks), in load order: later = higher priority
           --no-ship-filter  take every record a mod registry adds, not only those of packages its pak ships
+          --reference  a game reference (.ref file, or a folder with <fingerprint>.ref) for checks without the AES key;
+                       default: the cache in %APPDATA%\ScumRegistryMerger\reference, then the project's GitHub
+          --offline    don't download a game reference
         """;
 
     public static int Run(string[] args)
@@ -57,6 +63,7 @@ static class Cli
             "list" when args.Length == 3 && args[2] == "--tags" => List(args[1], true),
             "merge" => Merge(args[1..]),
             "pack" when args.Length == 3 => Pack(args[1], args[2]),
+            "make-reference" => MakeReference(args[1..]),
             _ when args[0].StartsWith("--") => Merge(args),
             _ => Fail(Usage),
         };
@@ -101,7 +108,8 @@ static class Cli
 
     static int Merge(string[] args)
     {
-        string? paks = null, aes = Environment.GetEnvironmentVariable("SCUM_AES_KEY");
+        string? paks = null, aes = Environment.GetEnvironmentVariable("SCUM_AES_KEY"), reference = null;
+        var offline = false;
         var options = new BuildOptions();
         for (var i = 0; i < args.Length; i++)
         {
@@ -115,6 +123,8 @@ static class Cli
                 case "--registry-out": options.RegistryOut = Next(); break;
                 case "--no-ship-filter": options.ShipFilter = false; break;
                 case "--dry-run": options.DryRun = true; break;
+                case "--reference": reference = Next(); break;
+                case "--offline": offline = true; break;
                 case "--mods":
                     options.Mods ??= [];
                     while (i + 1 < args.Length && !args[i + 1].StartsWith("--")) options.Mods.Add(Path.GetFullPath(args[++i]));
@@ -128,12 +138,25 @@ static class Cli
         Console.WriteLine($"Paks: {paks}");
         var log = new Progress<string>(s => Console.WriteLine("  " + s));
         using var engine = MergeEngine.Open(paks, aes);
+        var fingerprint = GameReference.GameFingerprint(paks);
+        if (reference != null)
+            engine.Reference = GameReference.Load(Directory.Exists(reference) ? Path.Combine(reference, GameReference.FileName(fingerprint)) : reference);
+        else if (string.IsNullOrWhiteSpace(aes))
+            engine.Reference = ReferenceStore.FindAsync(fingerprint, download: !offline).GetAwaiter().GetResult();
         var scan = engine.Scan(options.OutputPak);
         Console.WriteLine($"game registry: {(scan.GameRegistryReadable ? "readable" : $"not readable ({scan.EncryptedPaks} encrypted paks{(string.IsNullOrWhiteSpace(aes) ? ", no AES key given" : "")})")}");
+        Console.WriteLine($"game version {fingerprint}: " + scan.VersionCheck switch
+        {
+            VersionCheck.Game => "mods checked against the game's own registry",
+            VersionCheck.Reference => "mods checked against the published reference of this game version",
+            _ => "no reference for this game version: mods can't be checked without the AES key",
+        });
         foreach (var m in scan.Mods)
             Console.WriteLine(m.State == ModState.Unreadable
                 ? $"  {m.FileName}: registry can't be read ({m.Error}), left out"
-                : $"  {m.FileName}: {(m.HasRegistry ? $"{m.NewRecords} new records" : "no registry")}, {m.State}{(m.IsNew ? ", new" : "")}{(m.IsUpdated ? ", updated" : "")}");
+                : $"  {m.FileName}: {(m.HasRegistry ? $"{m.NewRecords} new records" : "no registry")}, {m.State}{(m.IsNew ? ", new" : "")}{(m.IsUpdated ? ", updated" : "")}"
+                  + (m.VersionMismatch ? $", BUILT FOR ANOTHER GAME VERSION ({m.StaleRecords} records of another version, {m.MissingGameRecords} game records missing)" : ""));
+        if (scan.NeedsKey) Console.WriteLine("  the AES key is needed for a correct build: pass --aes or --aes-file");
         foreach (var r in scan.RemovedMods) Console.WriteLine($"  removed since last build: {r}");
         if (scan.GameUpdated) Console.WriteLine("  the game's registry changed since the last build");
         foreach (var o in scan.Outranking) Console.WriteLine($"  {o} ships its own registry and loads after {scan.SharedPak}: the game uses its registry");
@@ -148,6 +171,33 @@ static class Cli
         foreach (var r in result.Removed) Console.WriteLine($"removed older shared pak {r}");
         if (!options.DryRun)
             Console.WriteLine($"wrote {result.OutputPak}" + (result.SigCopiedFrom != null ? $" (+ .sig, copy of {result.SigCopiedFrom})" : " (no .sig found to copy)"));
+        return 0;
+    }
+
+    static int MakeReference(string[] args)
+    {
+        string? paks = null, aes = Environment.GetEnvironmentVariable("SCUM_AES_KEY"), outDir = ".";
+        for (var i = 0; i < args.Length; i++)
+        {
+            string Next() => i + 1 < args.Length ? args[++i] : throw new InvalidOperationException($"{args[i]} needs a value.");
+            switch (args[i])
+            {
+                case "--paks": paks = Next(); break;
+                case "--aes": aes = Next(); break;
+                case "--aes-file": aes = File.ReadLines(Next()).FirstOrDefault(); break;
+                case "--out": outDir = Next(); break;
+                default: return Fail($"unknown option {args[i]}\n\n{Usage}");
+            }
+        }
+        paks = paks != null ? GameLocator.ResolvePaks(paks) ?? paks : GameLocator.FindPaksNearby()
+            ?? throw new InvalidOperationException("SCUM Paks folder not found: pass --paks <game folder>.");
+        if (string.IsNullOrWhiteSpace(aes)) throw new InvalidOperationException("make-reference needs the AES key (--aes or --aes-file).");
+        using var engine = MergeEngine.Open(paks, aes);
+        var reference = engine.MakeReference() ?? throw new InvalidOperationException("The game's registry can't be read with this key.");
+        Directory.CreateDirectory(outDir);
+        var file = Path.Combine(outDir, GameReference.FileName(reference.Fingerprint));
+        reference.Save(file);
+        Console.WriteLine($"{paks}: game version {reference.Fingerprint}, {reference.Count} records -> {file} ({new FileInfo(file).Length:N0} bytes)");
         return 0;
     }
 }

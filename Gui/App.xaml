@@ -24,6 +24,8 @@
     <SolidColorBrush x:Key="DangerBg" Color="#3A2321"/>
     <SolidColorBrush x:Key="Warn" Color="#E3B652"/>
     <SolidColorBrush x:Key="WarnBg" Color="#3A3221"/>
+    <SolidColorBrush x:Key="Orange" Color="#F0913A"/>
+    <SolidColorBrush x:Key="OrangeBg" Color="#3B2A1C"/>
 
     <FontFamily x:Key="UiFont">Bahnschrift, Segoe UI</FontFamily>
     <FontFamily x:Key="Icons">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>

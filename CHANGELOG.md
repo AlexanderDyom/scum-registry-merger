@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.1.2
+
+- Game version check. Each mod's registry is compared with the installed game: a mod built for another game version
+  gets an "other game version" badge (with how many records are of another version or missing), and an orange "!"
+  until it is in the shared registry. Its outdated records stay out of the shared registry.
+- Without the AES key the check uses a published reference of the installed game version (`reference/`, hashes only,
+  downloaded once). If every mod is built for another game version, the app asks for the AES key instead of building a
+  wrong registry. If there's no reference for the game version yet, it says so.
+- Console: `make-reference` writes the reference of the installed game version (needs the AES key); `--reference` and
+  `--offline` options.
+
 ## 1.1.1
 
 - Zlib-compressed mod paks (packed with UnrealPak or the SCUM editor) can be read now. Before, such a mod stopped the

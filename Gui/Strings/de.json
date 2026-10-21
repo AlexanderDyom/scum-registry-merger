@@ -123,5 +123,12 @@
   "ReasonOutranked": "{0} bringt eine eigene Registry mit und wird nach der gemeinsamen geladen, daher nutzt das Spiel seine Registry. Neu bauen setzt die gemeinsame Registry wieder an die Spitze.",
   "StateUnreadable": "Nicht lesbar",
   "ReasonUnreadable": "Die Registry von {0} konnte nicht gelesen werden. Seine neuen Gegenstände fehlen in der gemeinsamen Registry.",
-  "TipUnreadable": "Seine Registry ist nicht lesbar: {0}"
+  "TipUnreadable": "Seine Registry ist nicht lesbar: {0}",
+  "BadgeOtherVersion": "andere Spielversion",
+  "TipVersionMismatch": "Für eine andere Spielversion gebaut: {0} Einträge einer anderen Version, {1} Spieleinträge fehlen. Diese Einträge kommen nicht in die gemeinsame Registry, aber der Mod selbst funktioniert vielleicht nicht richtig.",
+  "BannerKeyTitle": "Alle Mods sind für eine andere Spielversion gebaut",
+  "BannerKeyText": "Ohne AES-Schlüssel müssten die Spieleinträge aus so einem Mod kommen. Gib den Schlüssel ein, dann wird die gemeinsame Registry aus den Einträgen des Spiels gebaut.",
+  "EnterKey": "AES-Schlüssel eingeben",
+  "ReasonVersionMismatch": "Für eine andere Spielversion gebaut: {0}.",
+  "ReasonVersionUnchecked": "Ohne AES-Schlüssel lässt sich nicht prüfen, für welche Spielversion die Mods gebaut sind: Für diese Spielversion gibt es noch keine Referenz. Gib den Schlüssel ein, um sicherzugehen."
 }

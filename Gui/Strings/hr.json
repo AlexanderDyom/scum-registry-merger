@@ -123,5 +123,12 @@
   "ReasonOutranked": "{0} ima vlastiti registar i učitava se nakon zajedničkog, pa igra koristi njegov registar. Ponovna izgradnja opet stavlja zajednički registar na vrh.",
   "StateUnreadable": "Ne može se pročitati",
   "ReasonUnreadable": "Nije moguće pročitati registar: {0}. Njegovi novi predmeti neće biti u zajedničkom registru.",
-  "TipUnreadable": "Registar moda ne može se pročitati: {0}"
+  "TipUnreadable": "Registar moda ne može se pročitati: {0}",
+  "BadgeOtherVersion": "druga verzija igre",
+  "TipVersionMismatch": "Izrađen za drugu verziju igre: zapisa druge verzije — {0}, nedostaje zapisa igre — {1}. Ti zapisi neće ući u zajednički registar, ali sam mod možda neće raditi ispravno.",
+  "BannerKeyTitle": "Svi modovi su izrađeni za drugu verziju igre",
+  "BannerKeyText": "Bez AES ključa zapisi igre morali bi se uzeti iz takvog moda. Unesi ključ i zajednički registar izgradit će se iz zapisa same igre.",
+  "EnterKey": "Unesi AES ključ",
+  "ReasonVersionMismatch": "Izrađeni za drugu verziju igre: {0}.",
+  "ReasonVersionUnchecked": "Bez AES ključa ne može se provjeriti za koju su verziju igre modovi izrađeni: za ovu verziju igre još nema referencije. Unesi ključ da budeš siguran."
 }

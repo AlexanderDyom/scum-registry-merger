@@ -14,6 +14,8 @@ public sealed class ModRow
     public string FileName { get; init; } = "";
     public string Badge { get; init; } = "";
     public Visibility BadgeVisibility => Badge.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+    public string VersionBadge { get; init; } = "";
+    public Visibility VersionBadgeVisibility => VersionBadge.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
     public string Count { get; init; } = "";
     public Brush CountBrush { get; init; } = Brushes.Transparent;
     public string Status { get; init; } = "";
@@ -68,9 +70,17 @@ public partial class MainWindow : Window
         var progress = new Progress<string>(p => { _progress = p; RenderBanner(); });
         try
         {
+            GameReference? reference = null;
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                // without the key, check the mods against the published reference of the installed game version
+                var fingerprint = await Task.Run(() => GameReference.GameFingerprint(paks));
+                reference = await ReferenceStore.FindAsync(fingerprint);
+            }
             _scan = await Task.Run(() =>
             {
                 using var engine = MergeEngine.Open(paks, key);
+                engine.Reference = reference;
                 return engine.Scan(log: progress);
             });
             _mode = Mode.Ready;
@@ -92,6 +102,12 @@ public partial class MainWindow : Window
     /// <summary>At startup: a mod was added, updated or removed since the last build (or the game updated).</summary>
     private async Task OfferBuildAsync(ScanResult scan)
     {
+        if (scan.NeedsKey)
+        {
+            if (Dialog.Show(this, Loc.T("BannerKeyTitle"), Loc.T("BannerKeyText"), Loc.T("EnterKey"), Loc.T("Later"), icon: "\uE8D7"))
+                await OpenSettingsAsync(focusKey: true);
+            return;
+        }
         if (!scan.NeedsBuild) return;
         var changed = scan.Mods.Where(m => m.State == ModState.Missing).ToList();
         string title, text;
@@ -150,13 +166,16 @@ public partial class MainWindow : Window
     private async void BannerButton_Click(object sender, RoutedEventArgs e)
     {
         if (_mode == Mode.Error) await ScanAsync();
+        else if (_mode == Mode.Ready && _scan is { NeedsKey: true }) await OpenSettingsAsync(focusKey: true);
         else if (_mode == Mode.Ready) await BuildAsync();
     }
 
-    private async void Settings_Click(object sender, RoutedEventArgs e)
+    private async void Settings_Click(object sender, RoutedEventArgs e) => await OpenSettingsAsync(focusKey: false);
+
+    private async Task OpenSettingsAsync(bool focusKey)
     {
         if (_mode is Mode.Scanning or Mode.Building) return;
-        var w = new SettingsWindow(S.Clone(), _update) { Owner = this };
+        var w = new SettingsWindow(S.Clone(), _update, focusKey) { Owner = this };
         if (w.ShowDialog() != true)
         {
             if (w.RegistryDeleted) await ScanAsync();
@@ -249,6 +268,8 @@ public partial class MainWindow : Window
         var s = _scan!;
         if (s.Mods.Count == 0)
             SetBanner("Surface", "Text2", "", Loc.T("NoModsTitle"), Loc.F("NoModsText", Path.Combine(Paks, "~mods")), null);
+        else if (s.NeedsKey)
+            SetBanner("OrangeBg", "Orange", "\uE8C9", Loc.T("BannerKeyTitle"), Loc.T("BannerKeyText"), Loc.T("EnterKey"));
         else if (s.NeedsBuild)
         {
             var title = s.MissingCount > 0 ? Loc.P("BannerMissing", s.MissingCount)
@@ -272,6 +293,9 @@ public partial class MainWindow : Window
         if (s.GameUpdated) yield return Loc.T("ReasonGameUpdated");
         if (s.BuiltWithoutKey) yield return Loc.T("ReasonNoKeyBuild");
         if (s.Outranking.Count > 0) yield return Loc.F("ReasonOutranked", string.Join(", ", s.Outranking));
+        if (s.VersionMismatchCount > 0)
+            yield return Loc.F("ReasonVersionMismatch", string.Join(", ", s.Mods.Where(m => m.VersionMismatch).Select(m => m.Name)));
+        if (s.VersionUnchecked) yield return Loc.T("ReasonVersionUnchecked");
         if (s.UnreadableCount > 0) yield return Loc.F("ReasonUnreadable", string.Join(", ", s.Mods.Where(m => m.State == ModState.Unreadable).Select(m => m.Name)));
     }
 
@@ -280,12 +304,14 @@ public partial class MainWindow : Window
         var mods = _scan?.Mods ?? [];
         EmptyState.Visibility = _mode == Mode.Ready && mods.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         EmptyText.Text = Loc.F("EmptyText", Path.Combine(Paks, "~mods"));
-        var approx = _scan is { GameRegistryReadable: false };
+        var approx = _scan is { VersionCheck: VersionCheck.None };
         var culture = Loc.Instance.Culture;
         ModList.ItemsSource = mods.Select(m => new ModRow
         {
-            Glyph = m.State switch { ModState.Missing => "", ModState.Unreadable => "", _ => "" },
-            StateBrush = B(m.State switch { ModState.Missing => "Danger", ModState.Unreadable => "Warn", _ => "Ok" }),
+            // orange "!" while a mod of another game version is not merged yet; once merged only its badge stays
+            Glyph = m.VersionMismatch && m.State == ModState.Missing ? "" : m.State switch { ModState.Missing => "", ModState.Unreadable => "", _ => "" },
+            StateBrush = B(m.VersionMismatch && m.State == ModState.Missing ? "Orange" : m.State switch { ModState.Missing => "Danger", ModState.Unreadable => "Warn", _ => "Ok" }),
+            VersionBadge = m.VersionMismatch ? Loc.T("BadgeOtherVersion") : "",
             RowBrush = m.State == ModState.Missing ? B("DangerBg") : Brushes.Transparent,
             Name = m.Name,
             FileName = m.FileName,
@@ -299,6 +325,7 @@ public partial class MainWindow : Window
             }),
             StatusBrush = B(m.State switch { ModState.Missing => "Danger", ModState.Included => "Ok", ModState.Unreadable => "Warn", _ => "Text2" }),
             Tip = m.State == ModState.Unreadable ? Loc.F("TipUnreadable", m.Error ?? "")
+                : m.VersionMismatch ? Loc.F("TipVersionMismatch", m.StaleRecords.ToString("N0", culture), m.MissingGameRecords.ToString("N0", culture))
                 : m.Sample.Count > 0
                 ? Loc.F("TipItems", string.Join(", ", m.Sample) + (m.NewRecords > m.Sample.Count ? ", …" : "")) + (approx ? "\n" + Loc.T("TipApprox") : "")
                 : m.HasRegistry ? null : Loc.T("TipNoRegistry"),

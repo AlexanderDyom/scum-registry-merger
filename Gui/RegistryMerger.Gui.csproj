@@ -8,7 +8,7 @@
     <Nullable>enable</Nullable>
     <AssemblyName>ScumRegistryMerger</AssemblyName>
     <RootNamespace>RegistryMerger.Gui</RootNamespace>
-    <Version>1.1.1</Version>
+    <Version>1.1.2</Version>
     <Product>SCUM Registry Merger</Product>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>app.ico</ApplicationIcon>

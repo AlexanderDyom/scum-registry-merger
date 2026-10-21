@@ -45,6 +45,27 @@ The game's own paks are encrypted; mod paks are not.
 
 The key is stored encrypted for your Windows user (DPAPI) and never leaves your computer.
 
+### Game version check
+
+Each mod's registry also carries the game's records of the game version the mod was built for. The app compares them
+with the installed game. A mod built for another version gets an *other game version* badge, and an orange **!** until it is in the shared registry. Its
+outdated records never get into the shared registry, but the mod itself may not work right until its author updates
+it.
+
+Without the AES key, the comparison uses a **reference** of the installed game version: 64-bit hashes of the game's
+record names, no game file names or content. It's downloaded once from this repository's [`reference/`](reference)
+folder. If every installed mod is built for another game version, the app asks for the AES key instead of building a
+registry from outdated records.
+
+After a SCUM update, someone with the key publishes the new reference:
+
+```
+ScumRegistryMerger.Cli.exe make-reference --paks "<SCUM folder>" --aes-file key.txt --out reference
+ScumRegistryMerger.Cli.exe make-reference --paks "<SCUM Server folder>" --aes-file key.txt --out reference
+```
+
+Then they commit the new `.ref` files to `reference/`. The client and the dedicated server have different references.
+
 ### Dedicated servers
 
 Pick *SCUM Server* on first start. On a server without a desktop, use the console version: it does the same scan and
@@ -93,6 +114,8 @@ of its own still loads after the shared one, the app says so, and a rebuild fixe
 - `Core/PakWriter.cs` writes an uncompressed pak v11 with the path hash index and the full directory index (the same
   bytes as `repak pack --version V11`).
 - `Core/PakPriority.cs` implements the pak priority rules above.
+- `Core/GameReference.cs` covers the game version: a fingerprint of the installed game (names and sizes of its own
+  paks) and the record-hash reference. `Core/ReferenceStore.cs` handles the cache and the download.
 - `Core/MergeEngine.cs` scans and builds. The shared pak also carries `SCUM/ModsRegistry.json` with the SHA-1 of every
   merged mod registry, which is how added, updated and removed mods are detected.
 - `Gui/` is the WPF window. `Cli/` is the console version, which also has `verify`, `list` and `pack` commands for
