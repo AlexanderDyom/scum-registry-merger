@@ -9,6 +9,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RegistryMerger.Cli", "Cli\R
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RegistryMerger.Gui", "Gui\RegistryMerger.Gui.csproj", "{3A9AE52D-1EE6-4ECC-8600-9F20D93B9BB7}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "external", "external", "{6BC78900-4EC6-4176-996C-C60C4FF5E9CE}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "modkit", "modkit", "{D4CF09AE-9A94-49CE-886A-11C4E8AE2981}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScumModKit.Core", "external\modkit\ScumModKit.Core\ScumModKit.Core.csproj", "{D1B92ADC-6BA0-45C6-9298-0299BEBE73A2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +36,13 @@ Global
 		{3A9AE52D-1EE6-4ECC-8600-9F20D93B9BB7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3A9AE52D-1EE6-4ECC-8600-9F20D93B9BB7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3A9AE52D-1EE6-4ECC-8600-9F20D93B9BB7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D1B92ADC-6BA0-45C6-9298-0299BEBE73A2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D1B92ADC-6BA0-45C6-9298-0299BEBE73A2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D1B92ADC-6BA0-45C6-9298-0299BEBE73A2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D1B92ADC-6BA0-45C6-9298-0299BEBE73A2}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{D4CF09AE-9A94-49CE-886A-11C4E8AE2981} = {6BC78900-4EC6-4176-996C-C60C4FF5E9CE}
+		{D1B92ADC-6BA0-45C6-9298-0299BEBE73A2} = {D4CF09AE-9A94-49CE-886A-11C4E8AE2981}
 	EndGlobalSection
 EndGlobal

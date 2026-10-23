@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.2.0
+
+- Recipes are merged too. Cooking mods ship the game's shared cooking files as "game + mine": the recipe list
+  (`CookingRecipeRegistry`), the recipes known by default (`CookingSkill`) and the game's 9 cookbooks
+  (`Book_Cooking_*`). The game used only the highest-priority copy, so other mods' new recipes vanished. Now the shared
+  pak carries merged versions: game list + every mod's additions − removals (`Enabled: false` counts as a removal;
+  removals only from mods built for the installed game version; without the AES key additions only, with a hint).
+- New *Recipes* column, and conflicts: files 2+ mods ship in different versions (e.g. the same game recipe) are listed
+  with the mod whose version works in game.
+- Cooked packages are read and written with ScumModKit (git submodule `external/modkit`).
+
 ## 1.1.3
 
 - Game version references are no longer published or downloaded. The `reference/` folder is gone from the repository.

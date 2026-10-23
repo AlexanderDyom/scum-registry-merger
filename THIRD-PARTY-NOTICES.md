@@ -6,6 +6,8 @@ own licence; no source code from these projects is copied into this repository.
 | Package | Purpose | Licence |
 |---|---|---|
 | [CUE4Parse](https://github.com/FabianFG/CUE4Parse) 1.2.2 | reading Unreal Engine pak files (the game's and the mods') | Apache-2.0 |
+| [ScumModKit](https://github.com/AlexanderDyom/scum-modkit) (git submodule `external/modkit`) | reading and writing cooked packages (the shared cooking files) | MIT |
+| [System.IO.Hashing](https://github.com/dotnet/runtime) 8.0.0 | used by ScumModKit | MIT |
 | [System.Security.Cryptography.ProtectedData](https://github.com/dotnet/runtime) 8.0.0 | Windows DPAPI, to store the AES key encrypted for the current user | MIT |
 | [.NET 8 runtime and WPF](https://github.com/dotnet) | runtime and window UI, bundled in the self-contained executables | MIT |
 

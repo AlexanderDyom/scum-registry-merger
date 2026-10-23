@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <PackageReference Include="CUE4Parse" Version="1.2.2" />
+    <ProjectReference Include="..\external\modkit\ScumModKit.Core\ScumModKit.Core.csproj" />
   </ItemGroup>
 
 </Project>

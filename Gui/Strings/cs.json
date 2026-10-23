@@ -139,5 +139,16 @@
   "RefDone": "Reference uložena: verze hry {0}, záznamů: {1}.",
   "RefExists": "Reference této verze hry existuje.",
   "RefMissing": "Reference této verze hry zatím není.",
-  "RefFailed": "Referenci se nepodařilo vytvořit: {0}"
+  "RefFailed": "Referenci se nepodařilo vytvořit: {0}",
+  "ColRecipes": "Recepty",
+  "RecipesIncluded": "Ve společném seznamu",
+  "RecipesMissing": "Není ve společném seznamu",
+  "RecipesNotNeeded": "Není potřeba",
+  "RecipesConflict": "Konflikt",
+  "AllGoodCookingTitle": "Všechny mody a recepty jsou sloučené",
+  "AllGoodCookingText": "Nové předměty a recepty všech modů se ve hře objeví.",
+  "ReasonConflict": "{0}: {1}. Hra používá verzi {2}.",
+  "ReasonMoreConflicts": "…a dalších konfliktů: {0} (podrobnosti v nápovědě modů).",
+  "ReasonCookingNoKey": "Bez AES klíče nelze poznat odebrané recepty. Přidejte klíč, aby se započítaly.",
+  "TipCooking": "Společné soubory vaření: {0}"
 }

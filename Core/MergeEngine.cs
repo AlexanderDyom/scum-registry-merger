@@ -48,6 +48,23 @@ public sealed class ModInfo
     public int MissingGameRecords { get; set; }
     /// <summary>The mod's registry was built for another game version than the installed one.</summary>
     public bool VersionMismatch => StaleRecords > 0 || MissingGameRecords > 0;
+    /// <summary>Whether its changes to the shared cooking files (recipe list, recipes known by default, cookbooks) are merged.</summary>
+    public CookingState Cooking { get; set; }
+    /// <summary>The shared cooking packages it ships (asset names).</summary>
+    public List<string> CookingPackages { get; } = [];
+    public string? CookingHash { get; set; }
+    /// <summary>Packages it ships that another mod ships in another version (only one version works in game).</summary>
+    public List<PackageConflict> Conflicts { get; } = [];
+}
+
+public enum CookingState
+{
+    /// <summary>The mod doesn't change the shared cooking files.</summary>
+    NotNeeded,
+    /// <summary>Its cooking changes are in the shared pak.</summary>
+    Included,
+    /// <summary>Its cooking changes are not (all) in the shared pak: rebuild needed.</summary>
+    Missing,
 }
 
 /// <summary>How the scan knows what the installed game's registry contains.</summary>
@@ -98,7 +115,17 @@ public sealed class ScanResult
     /// <summary>No AES key and no reference for this game version: which version the mods were built for is unknown.</summary>
     public bool VersionUnchecked => VersionCheck == VersionCheck.None && AnyRegistryMods;
 
-    public int MissingCount => Mods.Count(m => m.State == ModState.Missing);
+    /// <summary>Packages several mods ship in different versions; the game uses the highest-priority one.</summary>
+    public List<PackageConflict> Conflicts { get; } = [];
+
+    public int CookingMissingCount => Mods.Count(m => m.Cooking == CookingState.Missing);
+    public bool AnyCookingMods => Mods.Any(m => m.Cooking != CookingState.NotNeeded);
+    /// <summary>Cooking files are merged without the game's own versions: removed recipes can't be told.</summary>
+    public bool CookingWithoutKey => AnyCookingMods && !GameRegistryReadable;
+    /// <summary>A mod is out of the shared pak: its registry records or its cooking changes.</summary>
+    public bool IsMissing(ModInfo m) => m.State == ModState.Missing || m.Cooking == CookingState.Missing;
+
+    public int MissingCount => Mods.Count(m => m.State == ModState.Missing || m.Cooking == CookingState.Missing);
     public int UnreadableCount => Mods.Count(m => m.State == ModState.Unreadable);
     public bool NeedsBuild => MissingCount > 0 || RemovedMods.Count > 0 || GameUpdated || BuiltWithoutKey || Outranking.Count > 0;
     public bool AnyRegistryMods => Mods.Any(m => m.State is ModState.Included or ModState.Missing);
@@ -114,6 +141,8 @@ public sealed class BuildManifest
     public string? BaseHash { get; set; }
     public int Records { get; set; }
     public List<ManifestMod> Mods { get; set; } = [];
+    /// <summary>Mods whose shared cooking files are merged, with the hash of those files.</summary>
+    public List<ManifestMod> CookingMods { get; set; } = [];
 }
 
 public sealed class ManifestMod
@@ -151,9 +180,15 @@ public sealed class BuildResult
     public List<(string Mod, string Error)> Unreadable { get; } = [];
     /// <summary>Older shared paks removed after the build.</summary>
     public List<string> Removed { get; } = [];
+    /// <summary>Merged cooking packages.</summary>
+    public List<CookingResult> Cooking { get; } = [];
+    /// <summary>Cooking packages where 2+ mods change other settings than the list (the highest priority wins).</summary>
+    public List<PackageConflict> CookingConflicts { get; } = [];
+    /// <summary>Cooking packages that couldn't be merged, with the reason.</summary>
+    public List<string> CookingErrors { get; } = [];
 }
 
-public sealed class MergeEngine : IDisposable
+public sealed partial class MergeEngine : IDisposable
 {
     public const string RegistryPath = "SCUM/AssetRegistry.bin";
     public const string ManifestPath = "SCUM/ModsRegistry.json";
@@ -294,7 +329,9 @@ public sealed class MergeEngine : IDisposable
 
     private IVfsReader? StockPak() => _all.Where(v => !IsModPak(v) && Registry(v) != null).OrderBy(v => v, Priority).LastOrDefault();
 
-    private static bool IsShared(IVfsReader v) => IsRegistryOnly(v) && v.Name.Contains(SharedMarker, StringComparison.OrdinalIgnoreCase);
+    /// <summary>Our shared pak: registry only, or with our manifest (it also carries merged cooking packages).</summary>
+    private static bool IsShared(IVfsReader v) =>
+        v.Name.Contains(SharedMarker, StringComparison.OrdinalIgnoreCase) && (IsRegistryOnly(v) || FileOf(v, ManifestPath) != null);
 
     /// <summary>Shared registry paks, the one the game uses first.</summary>
     private List<IVfsReader> SharedPaks() => _all.Where(IsShared).OrderByDescending(v => v, Priority).ToList();
@@ -303,7 +340,7 @@ public sealed class MergeEngine : IDisposable
         _all.FirstOrDefault(v => string.Equals(Path.GetFullPath(v.Path), Path.GetFullPath(path), StringComparison.OrdinalIgnoreCase));
 
     private List<IVfsReader> ModPaks(string outputPak) => _all
-        .Where(v => IsModPak(v) && !IsRegistryOnly(v) && !string.Equals(Path.GetFullPath(v.Path), Path.GetFullPath(outputPak), StringComparison.OrdinalIgnoreCase))
+        .Where(v => IsModPak(v) && !IsRegistryOnly(v) && !IsShared(v) && !string.Equals(Path.GetFullPath(v.Path), Path.GetFullPath(outputPak), StringComparison.OrdinalIgnoreCase))
         .OrderBy(v => v, Priority).ToList();
 
     /// <summary>Display name: pakchunk901-FoodMod_P.pak -> FoodMod.</summary>
@@ -461,8 +498,10 @@ public sealed class MergeEngine : IDisposable
                     result.RemovedMods.Add(DisplayName(m.File));
         }
 
+        ScanCooking(result, manifest, shared, outputPak);
+
         // missing first, then load order
-        var order = result.Mods.Select((m, i) => (m, i)).OrderBy(x => x.m.State == ModState.Missing ? 0 : 1).ThenBy(x => x.i).Select(x => x.m).ToList();
+        var order = result.Mods.Select((m, i) => (m, i)).OrderBy(x => result.IsMissing(x.m) ? 0 : 1).ThenBy(x => x.i).Select(x => x.m).ToList();
         result.Mods.Clear();
         result.Mods.AddRange(order);
         return result;
@@ -512,6 +551,7 @@ public sealed class MergeEngine : IDisposable
 
         var manifest = new BuildManifest { BuiltAt = DateTime.UtcNow };
         AssetRegistry merged;
+        AssetRegistry? stockRegistry = null;
         var first = 0;
         var stock = StockPak();
         if (stock != null)
@@ -519,6 +559,7 @@ public sealed class MergeEngine : IDisposable
             log?.Report($"base: game registry ({stock.Name})");
             var bytes = PakEntryReader.Read(Registry(stock)!);
             merged = AssetRegistry.Load(bytes);
+            stockRegistry = AssetRegistry.Load(bytes);
             manifest.BaseHash = Hash(bytes);
             result.BaseFromGame = true;
         }
@@ -571,13 +612,16 @@ public sealed class MergeEngine : IDisposable
             manifest.Mods[0].NewRecords = lowest?.NewRecords ?? 0;
         }
 
+        // shared cooking files: recipe list, recipes known by default, the game's cookbooks
+        var cookingFiles = BuildCooking(outputPak, manifest, result, stockRegistry, log);
+
         if (options.RegistryOut != null) File.WriteAllBytes(options.RegistryOut, outBytes);
         Dispose(); // close every pak, including the old shared one
         if (options.DryRun) return result;
 
         Directory.CreateDirectory(Path.GetDirectoryName(outputPak)!);
         var tmp = outputPak + ".tmp";
-        PakWriter.Write(tmp, [(RegistryPath, outBytes), (ManifestPath, JsonSerializer.SerializeToUtf8Bytes(manifest, Json))]);
+        PakWriter.Write(tmp, [(RegistryPath, outBytes), (ManifestPath, JsonSerializer.SerializeToUtf8Bytes(manifest, Json)), .. cookingFiles]);
         File.Move(tmp, outputPak, true);
         if (options.OutputPak == null)
         {

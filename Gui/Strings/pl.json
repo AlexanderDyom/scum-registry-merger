@@ -139,5 +139,16 @@
   "RefDone": "Wzorzec zapisany: wersja gry {0}, wpisów: {1}.",
   "RefExists": "Wzorzec tej wersji gry istnieje.",
   "RefMissing": "Nie ma jeszcze wzorca tej wersji gry.",
-  "RefFailed": "Nie udało się utworzyć wzorca: {0}"
+  "RefFailed": "Nie udało się utworzyć wzorca: {0}",
+  "ColRecipes": "Przepisy",
+  "RecipesIncluded": "We wspólnej liście",
+  "RecipesMissing": "Nie ma we wspólnej liście",
+  "RecipesNotNeeded": "Niepotrzebny",
+  "RecipesConflict": "Konflikt",
+  "AllGoodCookingTitle": "Wszystkie mody i przepisy są połączone",
+  "AllGoodCookingText": "Nowe przedmioty i przepisy wszystkich modów pojawią się w grze.",
+  "ReasonConflict": "{0}: {1}. Gra używa wersji {2}.",
+  "ReasonMoreConflicts": "…i jeszcze konfliktów: {0} (szczegóły w podpowiedziach modów).",
+  "ReasonCookingNoKey": "Bez klucza AES nie da się wykryć usuniętych przepisów. Dodaj klucz, aby je uwzględnić.",
+  "TipCooking": "Wspólne pliki gotowania: {0}"
 }

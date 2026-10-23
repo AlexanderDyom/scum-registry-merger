@@ -139,5 +139,16 @@
   "RefDone": "Reference saved: game version {0}, {1} records.",
   "RefExists": "There is a reference of this game version.",
   "RefMissing": "No reference of this game version yet.",
-  "RefFailed": "Couldn't make the reference: {0}"
+  "RefFailed": "Couldn't make the reference: {0}",
+  "ColRecipes": "Recipes",
+  "RecipesIncluded": "In shared list",
+  "RecipesMissing": "Not in shared list",
+  "RecipesNotNeeded": "Not needed",
+  "RecipesConflict": "Conflict",
+  "AllGoodCookingTitle": "All mods and recipes are merged",
+  "AllGoodCookingText": "New items and recipes of every mod will show up in game.",
+  "ReasonConflict": "{0}: {1}. The game uses {2}'s version.",
+  "ReasonMoreConflicts": "…and {0} more conflicts (see the mods' tooltips).",
+  "ReasonCookingNoKey": "Without the AES key, recipes a mod removed can't be told. Add the key to take them into account.",
+  "TipCooking": "Shared cooking files: {0}"
 }

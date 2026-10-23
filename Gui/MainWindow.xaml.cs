@@ -20,6 +20,8 @@ public sealed class ModRow
     public Brush CountBrush { get; init; } = Brushes.Transparent;
     public string Status { get; init; } = "";
     public Brush StatusBrush { get; init; } = Brushes.Transparent;
+    public string Recipes { get; init; } = "";
+    public Brush RecipesBrush { get; init; } = Brushes.Transparent;
     public string? Tip { get; init; }
 }
 
@@ -276,12 +278,23 @@ public partial class MainWindow : Window
                 : s.GameUpdated ? Loc.T("BannerGameUpdatedTitle")
                 : s.Outranking.Count > 0 ? Loc.T("BannerOutrankedTitle")
                 : Loc.T("BannerNoKeyBuildTitle");
-            SetBanner("DangerBg", "Danger", "", title, string.Join("\n", Reasons(s)), Loc.T("BuildRegistry"));
+            SetBanner("DangerBg", "Danger", "", title, string.Join("\n", Reasons(s).Concat(Notes(s))), Loc.T("BuildRegistry"));
         }
-        else if (!s.AnyRegistryMods)
+        else if (!s.AnyRegistryMods && !s.AnyCookingMods)
             SetBanner("Surface", "Text2", "", Loc.T("NothingNeededTitle"), Loc.T("NothingNeededText"), null);
         else
-            SetBanner("OkBg", "Ok", "", Loc.T("AllGoodTitle"), Loc.T("AllGoodText"), Loc.T("Rebuild"), primary: false);
+            SetBanner("OkBg", "Ok", "", Loc.T(s.AnyCookingMods ? "AllGoodCookingTitle" : "AllGoodTitle"),
+                string.Join("\n", Notes(s).Prepend(Loc.T(s.AnyCookingMods ? "AllGoodCookingText" : "AllGoodText"))), Loc.T("Rebuild"), primary: false);
+    }
+
+    private static string ConflictText(PackageConflict c) => Loc.F("ReasonConflict", c.AssetName, string.Join(" \u2194 ", c.Mods), c.Winner);
+
+    /// <summary>Lines shown under any ready banner: conflicts (first 3) and the missing key for cooking removals.</summary>
+    private static IEnumerable<string> Notes(ScanResult s)
+    {
+        foreach (var c in s.Conflicts.Take(3)) yield return ConflictText(c);
+        if (s.Conflicts.Count > 3) yield return Loc.F("ReasonMoreConflicts", s.Conflicts.Count - 3);
+        if (s.CookingWithoutKey) yield return Loc.T("ReasonCookingNoKey");
     }
 
     /// <summary>Why a rebuild is needed, one line each.</summary>
@@ -305,29 +318,44 @@ public partial class MainWindow : Window
         EmptyText.Text = Loc.F("EmptyText", Path.Combine(Paks, "~mods"));
         var approx = _scan is { VersionCheck: VersionCheck.None };
         var culture = Loc.Instance.Culture;
-        ModList.ItemsSource = mods.Select(m => new ModRow
+        ModList.ItemsSource = mods.Select(m =>
         {
-            // orange "!" while a mod of another game version is not merged yet; once merged only its badge stays
-            Glyph = m.VersionMismatch && m.State == ModState.Missing ? "" : m.State switch { ModState.Missing => "", ModState.Unreadable => "", _ => "" },
-            StateBrush = B(m.VersionMismatch && m.State == ModState.Missing ? "Orange" : m.State switch { ModState.Missing => "Danger", ModState.Unreadable => "Warn", _ => "Ok" }),
-            VersionBadge = m.VersionMismatch ? Loc.T("BadgeOtherVersion") : "",
-            RowBrush = m.State == ModState.Missing ? B("DangerBg") : Brushes.Transparent,
-            Name = m.Name,
-            FileName = m.FileName,
-            Badge = m.State != ModState.Missing ? "" : m.IsUpdated ? Loc.T("BadgeUpdated") : m.IsNew ? Loc.T("BadgeNew") : "",
-            Count = m.NewRecords > 0 ? (approx ? "≈ " : "") + m.NewRecords.ToString("N0", culture) : "—",
-            CountBrush = B(m.NewRecords > 0 ? "Text" : "Muted"),
-            Status = Loc.T(m.State switch
+            var missing = _scan!.IsMissing(m);
+            var cookingConflict = m.Conflicts.Any(c => c.IsCooking);
+            var tips = new List<string>();
+            if (m.State == ModState.Unreadable) tips.Add(Loc.F("TipUnreadable", m.Error ?? ""));
+            else if (m.VersionMismatch) tips.Add(Loc.F("TipVersionMismatch", m.StaleRecords.ToString("N0", culture), m.MissingGameRecords.ToString("N0", culture)));
+            else if (m.Sample.Count > 0)
+                tips.Add(Loc.F("TipItems", string.Join(", ", m.Sample) + (m.NewRecords > m.Sample.Count ? ", …" : "")) + (approx ? "\n" + Loc.T("TipApprox") : ""));
+            else if (!m.HasRegistry) tips.Add(Loc.T("TipNoRegistry"));
+            if (m.CookingPackages.Count > 0) tips.Add(Loc.F("TipCooking", string.Join(", ", m.CookingPackages)));
+            tips.AddRange(m.Conflicts.Select(ConflictText));
+            return new ModRow
             {
-                ModState.Missing => "StateMissing", ModState.Included => "StateIncluded", ModState.Unreadable => "StateUnreadable",
-                _ => m.HasRegistry ? "StateNoNew" : "StateNoRegistry",
-            }),
-            StatusBrush = B(m.State switch { ModState.Missing => "Danger", ModState.Included => "Ok", ModState.Unreadable => "Warn", _ => "Text2" }),
-            Tip = m.State == ModState.Unreadable ? Loc.F("TipUnreadable", m.Error ?? "")
-                : m.VersionMismatch ? Loc.F("TipVersionMismatch", m.StaleRecords.ToString("N0", culture), m.MissingGameRecords.ToString("N0", culture))
-                : m.Sample.Count > 0
-                ? Loc.F("TipItems", string.Join(", ", m.Sample) + (m.NewRecords > m.Sample.Count ? ", …" : "")) + (approx ? "\n" + Loc.T("TipApprox") : "")
-                : m.HasRegistry ? null : Loc.T("TipNoRegistry"),
+                // orange "!" while a mod of another game version is not merged yet; once merged only its badge stays
+                Glyph = m.VersionMismatch && missing ? "\uE8C9" : missing ? "\uE711" : m.State == ModState.Unreadable ? "\uE7BA" : "\uE73E",
+                StateBrush = B(m.VersionMismatch && missing ? "Orange" : missing ? "Danger" : m.State == ModState.Unreadable ? "Warn" : "Ok"),
+                VersionBadge = m.VersionMismatch ? Loc.T("BadgeOtherVersion") : "",
+                RowBrush = missing ? B("DangerBg") : Brushes.Transparent,
+                Name = m.Name,
+                FileName = m.FileName,
+                Badge = !missing ? "" : m.IsUpdated ? Loc.T("BadgeUpdated") : m.IsNew ? Loc.T("BadgeNew") : "",
+                Count = m.NewRecords > 0 ? (approx ? "\u2248 " : "") + m.NewRecords.ToString("N0", culture) : "\u2014",
+                CountBrush = B(m.NewRecords > 0 ? "Text" : "Muted"),
+                Status = Loc.T(m.State switch
+                {
+                    ModState.Missing => "StateMissing", ModState.Included => "StateIncluded", ModState.Unreadable => "StateUnreadable",
+                    _ => m.HasRegistry ? "StateNoNew" : "StateNoRegistry",
+                }),
+                StatusBrush = B(m.State switch { ModState.Missing => "Danger", ModState.Included => "Ok", ModState.Unreadable => "Warn", _ => "Text2" }),
+                Recipes = Loc.T(m.Cooking switch
+                {
+                    CookingState.Missing => "RecipesMissing", CookingState.Included => cookingConflict ? "RecipesConflict" : "RecipesIncluded",
+                    _ => cookingConflict ? "RecipesConflict" : "RecipesNotNeeded",
+                }),
+                RecipesBrush = B(m.Cooking == CookingState.Missing ? "Danger" : cookingConflict ? "Orange" : m.Cooking == CookingState.Included ? "Ok" : "Text2"),
+                Tip = tips.Count > 0 ? string.Join("\n", tips) : null,
+            };
         }).ToList();
     }
 }

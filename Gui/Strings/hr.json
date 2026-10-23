@@ -139,5 +139,16 @@
   "RefDone": "Referencija spremljena: verzija igre {0}, zapisa: {1}.",
   "RefExists": "Referencija ove verzije igre postoji.",
   "RefMissing": "Referencije ove verzije igre još nema.",
-  "RefFailed": "Nije moguće napraviti referenciju: {0}"
+  "RefFailed": "Nije moguće napraviti referenciju: {0}",
+  "ColRecipes": "Recepti",
+  "RecipesIncluded": "U zajedničkom popisu",
+  "RecipesMissing": "Nije u zajedničkom popisu",
+  "RecipesNotNeeded": "Nije potreban",
+  "RecipesConflict": "Sukob",
+  "AllGoodCookingTitle": "Svi modovi i recepti su spojeni",
+  "AllGoodCookingText": "Novi predmeti i recepti svih modova pojavit će se u igri.",
+  "ReasonConflict": "{0}: {1}. Igra koristi verziju {2}.",
+  "ReasonMoreConflicts": "…i još sukoba: {0} (detalji u opisima modova).",
+  "ReasonCookingNoKey": "Bez AES ključa ne mogu se prepoznati uklonjeni recepti. Dodaj ključ da se uzmu u obzir.",
+  "TipCooking": "Zajedničke datoteke kuhanja: {0}"
 }

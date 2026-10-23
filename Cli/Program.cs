@@ -155,6 +155,11 @@ static class Cli
                 : $"  {m.FileName}: {(m.HasRegistry ? $"{m.NewRecords} new records" : "no registry")}, {m.State}{(m.IsNew ? ", new" : "")}{(m.IsUpdated ? ", updated" : "")}"
                   + (m.VersionMismatch ? $", BUILT FOR ANOTHER GAME VERSION ({m.StaleRecords} records of another version, {m.MissingGameRecords} game records missing)" : ""));
         if (scan.NeedsKey) Console.WriteLine("  the AES key is needed for a correct build: pass --aes or --aes-file");
+        foreach (var m in scan.Mods.Where(m => m.Cooking != CookingState.NotNeeded))
+            Console.WriteLine($"  {m.FileName}: cooking files {string.Join(", ", m.CookingPackages)}: {m.Cooking}");
+        if (scan.CookingWithoutKey) Console.WriteLine("  cooking files merged without the AES key: recipes a mod removed can't be told");
+        foreach (var c in scan.Conflicts)
+            Console.WriteLine($"  conflict: {c.AssetName} in {string.Join(" <-> ", c.Mods)}: the game uses {c.Winner}'s");
         foreach (var r in scan.RemovedMods) Console.WriteLine($"  removed since last build: {r}");
         if (scan.GameUpdated) Console.WriteLine("  the game's registry changed since the last build");
         foreach (var o in scan.Outranking) Console.WriteLine($"  {o} ships its own registry and loads after {scan.SharedPak}: the game uses its registry");
@@ -166,6 +171,12 @@ static class Cli
         Console.WriteLine($"merged: {result.Records} records (base: {(result.BaseFromGame ? "game registry" : "a mod's copy of the game registry")})");
         if (options.RegistryOut != null) Console.WriteLine($"wrote {options.RegistryOut}");
         foreach (var (mod, error) in result.Unreadable) Console.WriteLine($"  {mod}: left out, registry can't be read ({error})");
+        foreach (var c in result.Cooking)
+            Console.WriteLine($"  cooking {c.Package[(c.Package.LastIndexOf('/') + 1)..]}: {c.Entries} entries" +
+                              (c.Added.Count > 0 ? $", added {string.Join(", ", c.Added)}" : "") +
+                              (c.Removed.Count > 0 ? $", removed {string.Join(", ", c.Removed)}" : ""));
+        foreach (var c in result.CookingConflicts) Console.WriteLine($"  cooking conflict: {c.AssetName} settings changed by {string.Join(" <-> ", c.Mods)}: {c.Winner}'s win");
+        foreach (var e in result.CookingErrors) Console.WriteLine($"  cooking not merged: {e}");
         foreach (var r in result.Removed) Console.WriteLine($"removed older shared pak {r}");
         if (!options.DryRun)
             Console.WriteLine($"wrote {result.OutputPak}" + (result.SigCopiedFrom != null ? $" (+ .sig, copy of {result.SigCopiedFrom})" : " (no .sig found to copy)"));

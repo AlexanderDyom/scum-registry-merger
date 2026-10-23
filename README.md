@@ -1,6 +1,6 @@
 # SCUM Registry Merger
 
-**Use several SCUM item mods at the same time without their items disappearing.**
+**Use several SCUM item and recipe mods at the same time without their items and recipes disappearing.**
 
 [Русская версия](README.ru.md)
 
@@ -13,11 +13,17 @@ The game reads only one registry: the one in the pak with the highest priority. 
 `SCUM/Content/Paks/~mods` and only one registry is used. **The other mod's new items silently vanish**: they can't be
 spawned or crafted, and traders don't sell them.
 
+Cooking mods have the same problem with the game's shared cooking files. Each ships the recipe list
+(`CookingRecipeRegistry`), the recipes known by default (`CookingSkill`) and the cookbooks (`Book_Cooking_*`) as
+"game + mine", and only the highest-priority mod's copy counts. **The other mods' new recipes vanish.**
+
 ## The fix
 
-SCUM Registry Merger reads the registry of every installed mod and merges it with the game's registry. It writes the
-result as one extra pak, `~mods/pakchunk999-ModsRegistry_999_P.pak` (plus a `.sig`). That pak takes priority over
-every mod (see [Which pak wins](#which-pak-wins)), so the game uses its registry, and it has every mod's records.
+SCUM Registry Merger reads the registry of every installed mod and merges it with the game's registry. It does the
+same with the shared cooking files: game list + every mod's additions − removals. It writes the result as one extra pak,
+`~mods/pakchunk999-ModsRegistry_999_P.pak` (plus a `.sig`). That pak takes priority over every mod (see
+[Which pak wins](#which-pak-wins)), so the game uses its registry and cooking files, and they have every mod's records
+and recipes.
 
 Your mods stay untouched. To undo, delete that one pak, or press *Delete registry* in the settings.
 
@@ -28,8 +34,10 @@ Your mods stay untouched. To undo, delete that one pak, or press *Delete registr
 2. Start it. On first start, pick **SCUM** (client) or **SCUM Server**. Both are found in your Steam libraries, or you
    can choose any folder. The game's AES key is optional (see below).
 3. The window lists every mod in `~mods`:
-   - ✔ green: the mod's new items are in the shared registry, or the mod doesn't need it;
-   - ✖ red: the mod's new items are missing. Press **Build registry**.
+   - ✔ green: the mod's new items and recipes are in the shared pak, or the mod doesn't need it;
+   - ✖ red: the mod's new items or recipes are missing. Press **Build registry**.
+   - *Conflict*: two mods ship different versions of the same file (for example the same game recipe). Those can't be
+     merged; the app shows which mod's version works in game.
 4. Close the game (or stop the server) before building: SCUM keeps its paks open.
 
 **Run it again whenever you add, update or remove a mod, and after every game update.** On start it compares the mods
@@ -65,6 +73,22 @@ from there automatically when no key is set; you can copy that file to other com
 A reference holds only 64-bit hashes of the game's record names, no game file names or content, and is never
 uploaded. Make a new one after each game update. If every installed mod is built for another game version, the app
 then asks for the AES key instead of building a registry from outdated records.
+
+### Recipes
+
+The *Recipes* column shows whether a mod's changes to the shared cooking files are merged. What is merged:
+
+| File | What |
+|---|---|
+| `Cooking/Data/CookingRecipeRegistry` | the recipe list (`_entries`, with `Enabled`). A recipe missing there doesn't exist in game |
+| `Skills/CookingSkill` | the recipes known by default (`_recipesKnownByDefault`) |
+| `Items/Books/Cookbooks/Book_Cooking_*` (the game's 9 cookbooks) | the recipes a book teaches (`_recipes`) |
+
+Result = the game's list + every mod's additions − removals. A mod that switches a recipe off (`Enabled: false`)
+counts as a removal. Removals are only taken from mods built for the installed game version: an older mod simply
+lacks the recipes added since. Without the AES key the game's own lists can't be read, so the app merges every mod's
+list ("game + mine") and says that removals can't be told. Other settings of these files (such as cook time
+multipliers) come from the highest-priority mod, and the app shows it when two mods change them differently.
 
 ### Dedicated servers
 
@@ -115,17 +139,22 @@ of its own still loads after the shared one, the app says so, and a rebuild fixe
   bytes as `repak pack --version V11`).
 - `Core/PakPriority.cs` implements the pak priority rules above.
 - `Core/GameReference.cs` covers the game version: a fingerprint of the installed game (names and sizes of its own
-  paks) and the record-hash reference. `Core/ReferenceStore.cs` handles the cache and the download.
+  paks) and the record-hash reference. `Core/ReferenceStore.cs` keeps references in the local folder (nothing is downloaded).
+- `Core/CookingMerge.cs` merges the shared cooking files; `Core/MergeEngine.Cooking.cs` finds them in the mods,
+  builds them into the shared pak and finds conflicts (files 2+ mods ship in different versions). Cooked packages are
+  read and written with [ScumModKit](https://github.com/AlexanderDyom/scum-modkit) (`external/modkit`, a git
+  submodule).
 - `Core/MergeEngine.cs` scans and builds. The shared pak also carries `SCUM/ModsRegistry.json` with the SHA-1 of every
-  merged mod registry, which is how added, updated and removed mods are detected.
+  merged mod registry and of every mod's cooking files, which is how added, updated and removed mods are detected.
 - `Gui/` is the WPF window. `Cli/` is the console version, which also has `verify`, `list` and `pack` commands for
   registries.
 
 ## Build from source
 
-Needs the .NET 8 SDK on Windows:
+Needs the .NET 8 SDK on Windows. Clone with the ScumModKit submodule:
 
 ```
+git clone --recursive https://github.com/AlexanderDyom/scum-registry-merger.git
 dotnet build RegistryMerger.sln -c Release
 dotnet publish Gui -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -o publish
 dotnet publish Cli -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -o publish
@@ -135,6 +164,7 @@ The icons come from [`icons/`](icons), a tiny pixel-art generator.
 
 ## Credits and license
 
-MIT, see [LICENSE](LICENSE). Built on [CUE4Parse](https://github.com/FabianFG/CUE4Parse) (Apache-2.0). The registry
+MIT, see [LICENSE](LICENSE). Built on [CUE4Parse](https://github.com/FabianFG/CUE4Parse) (Apache-2.0) and
+[ScumModKit](https://github.com/AlexanderDyom/scum-modkit) (MIT). The registry
 layout follows [SCUM Modding Studio](https://github.com/ALLAWI32/SCUM-Modding-Studio) (MIT). The pak layout matches
 [repak](https://github.com/trumank/repak). Details: [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).

@@ -139,5 +139,16 @@
   "RefDone": "Referenz gespeichert: Spielversion {0}, {1} Einträge.",
   "RefExists": "Für diese Spielversion gibt es eine Referenz.",
   "RefMissing": "Für diese Spielversion gibt es noch keine Referenz.",
-  "RefFailed": "Referenz konnte nicht erstellt werden: {0}"
+  "RefFailed": "Referenz konnte nicht erstellt werden: {0}",
+  "ColRecipes": "Rezepte",
+  "RecipesIncluded": "In der gemeinsamen Liste",
+  "RecipesMissing": "Nicht in der Liste",
+  "RecipesNotNeeded": "Nicht nötig",
+  "RecipesConflict": "Konflikt",
+  "AllGoodCookingTitle": "Alle Mods und Rezepte sind zusammengeführt",
+  "AllGoodCookingText": "Neue Gegenstände und Rezepte aller Mods erscheinen im Spiel.",
+  "ReasonConflict": "{0}: {1}. Das Spiel nutzt die Version von {2}.",
+  "ReasonMoreConflicts": "…und {0} weitere Konflikte (siehe Tooltips der Mods).",
+  "ReasonCookingNoKey": "Ohne AES-Schlüssel lassen sich entfernte Rezepte nicht erkennen. Füge den Schlüssel hinzu, um sie zu berücksichtigen.",
+  "TipCooking": "Gemeinsame Kochdateien: {0}"
 }
